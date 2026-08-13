@@ -18,3 +18,29 @@ La gestión y visualización de datos de inundaciones en tiempo real es un desaf
 *Ciudadano*: Reporta inundaciones y visualiza zonas afectadas en tiempo real.
 
 *Operador*: Gestiona los reportes de inundaciones y visualiza el estado de las zonas afectadas.
+
+
+
+
+########################################################
+########################################################
+
+
+Tipo de proyecto 2
+
+Software como servicio para la gestión, geolocalización y coordinación de recolección de residuos reciclables en tiempo real.
+
+Modalidad de implementación
+
+Proyecto con IA / Ingeniería de IA / VibeCoding.
+
+Problema Inicial
+
+La falta de un canal directo y geolocalizado entre generadores de residuos (vecinos/comercios) y recolectores dificulta la logística de recolección en tiempo real, provocando que toneladas de material reciclable terminen en el vertedero.
+
+Usuarios Identificados
+
+Ciudadano / Comercio (Generador): Reporta y agenda la disponibilidad de material reciclable (tipo, volumen, foto y ubicación) y visualiza los puntos de acopio más cercanos.
+
+Recolector / Operador: Gestiona las solicitudes de retiro activas en su zona, visualiza las rutas de recolección en un mapa interactivo y marca las entregas completadas.
+
