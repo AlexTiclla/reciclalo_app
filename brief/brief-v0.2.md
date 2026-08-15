@@ -57,3 +57,4 @@ Mapa para el recolector: Vista interactiva donde se muestren los puntos con soli
 
 Hipótesis
 Si facilitamos un canal directo donde el ciudadano pueda publicar sus residuos reciclables y el recolector pueda ubicarlos en un mapa en tiempo real, entonces aumentará el volumen de material reciclado en la ciudad y los recolectores reducirán sus tiempos y costos de recorrido.
+
