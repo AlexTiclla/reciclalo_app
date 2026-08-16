@@ -1,42 +1,60 @@
-#Brief v0.1
+Brief v0.2: Plataforma de Reciclaje Urbano
+Problema
+¿Qué dificultad queremos comprender?
 
-**Problema**
-¿Que dificultad queremos comprender?
+La falta de coordinación entre los generadores de residuos reciclables (vecinos y comercios) y las personas o centros que los recolectan (recolectores informales/asociaciones).
 
-Las avenidas, calles, parqueos, tuneles, barrios de la ciudad de Santa Cruz a menudo quedan inundadas e intransitables.
+La materia reciclable termina en la basura común por falta de canales simples para entregarla o agendar su retiro.
 
-**Contexto**
-¿Donde y cuando Ocurre?
+Contexto
+¿Dónde y cuándo ocurre?
 
-Especialmente durante las epocas de lluvias, donde ocurre, ocurre a menudo en zonas remotas, en canales, inclusive el centro de la ciudad.
+En viviendas, condominios, restaurantes y comercios de la ciudad de Santa Cruz.
 
-**Idea Inicial**
-¿Que solucion imaginamos por ahora?
+Ocurre de manera cotidiana al momento de desechar materiales (plásticos, cartón, vidrio, latas) que terminan acumulándose en casas o yéndose al vertedero municipal por no saber cuándo o a quién entregárselos.
 
-Que el ciudadano afectado por estas inundaciones, pueda reportar estas inundaciones, pueda ver en tiempo real que zonas estan afectadas en una mapa, evitar esas rutas.
+Idea Inicial
+¿Qué solución imaginamos por ahora?
 
-Que el operador, (imaginamos que a largo plazo podriamos tener clientes como la gobernacion), pueda designar trabajadores para drenar las zonas inundadas.
+Una aplicación móvil que conecte directamente al vecino o negocio con el recolector de su zona o le muestre un mapa con puntos de acopio cercanos.
 
-**Usuario**
-¿Quien vive esa dificultad?
+Permitir a los vecinos publicar o agendar solicitudes de retiro de reciclaje con ubicación y foto, y dar a los recolectores una herramienta para visualizar estas solicitudes en un mapa y optimizar su ruta de recolección.
 
-El ciudadano, las autoridades de nuestra ciudad que ha menudo no tienen claro que inundación es más priorizable, más importante. 
+Usuario
+¿Quién vive esa dificultad?
 
-**Tarea**
-¿Que intenta hacer el usuario?
+El Ciudadano / Comercio: Familias o administradores de negocios que quieren reciclar pero no tienen tiempo ni logística para llevar sus residuos a un punto lejano.
 
-Ciudadano, el ciudadano intenta reportar una inundación, ver mapa (google maps) con las zonas más afectadas para evitar esas zonas, ver alertas de que zonas estan intransitables.
+El : Recolectores independientes o centros de acopio que dependen del material recuperado para generar sus ingresos y necesitan optimizar sus recorridos por la ciudad.
 
-Operador (posiblemente la gobernacion), intenta tener un control de los reportes de los ciudadanos para designar trabajadores a esas zonas, ver mapa de las zonas afectadas, ver alertas. 
+Tarea
+¿Qué intenta hacer el usuario?
 
-**Alcance**
-¿Que parte pequeña abordaremos primero?
+Ciudadano / Comercio:
 
-Iniciar sesión sin registro (para mantenerlo facil).
-Visualizar mapa de calor (zonas inundadas).
-Reportar una inundación, descripción, ubicación. 
-(Aún no tenemos claro si analizar con IA un reporte es necesario, es demasiado?)
+Publicar un aviso de "tengo material listo para retirar" (tipo de material, cantidad aproximada y ubicación).
 
-**Hipotesis**
+Ver en un mapa los puntos de acopio o contenedores de reciclaje autorizados más cercanos.
 
-Si el ciudadano puede reportar inundaciones y ver un mapa de calor de las zonas afectadas, entonces podrá evitar esas zonas y las autoridades podrán priorizar la atención a las zonas más afectadas.
+Recibir notificación cuando un recolector acepte la solicitud.
+
+Recolector:
+
+Ver en un mapa las solicitudes de retiro disponibles cerca de su ubicación actual.
+
+Aceptar un paquete de reciclaje y marcarlo como "recolectado".
+
+Alcance
+¿Qué parte pequeña abordaremos primero?
+
+Inicio de sesión sin registro o simplificado (por número de teléfono o ingreso rápido).
+
+Creación de solicitud de retiro: Formulario simple para el vecino (selección de tipo de material, ubicación GPS y foto del paquete).
+
+Mapa para el recolector: Vista interactiva donde se muestren los puntos con solicitudes activas para aceptarlas.
+
+(Sobre la pregunta de IA): No es necesaria para la primera versión. Clasificar imágenes con IA en esta fase incrementaría la complejidad técnica sin aportar valor crítico inmediato; una simple selección manual por iconos (Plástico, Cartón, Vidrio, Metal) es mucho más ágil y efectiva para probar la hipótesis.
+
+Hipótesis
+Si facilitamos un canal directo donde el ciudadano pueda publicar sus residuos reciclables y el recolector pueda ubicarlos en un mapa en tiempo real, entonces aumentará el volumen de material reciclado en la ciudad y los recolectores reducirán sus tiempos y costos de recorrido.
+
