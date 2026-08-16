@@ -1,4 +1,4 @@
-Brief v0.2: Plataforma de Reciclaje Urbano
+Brief v0.1: Plataforma de Reciclaje Urbano
 Problema
 ¿Qué dificultad queremos comprender?
 
