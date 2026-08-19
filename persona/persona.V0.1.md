@@ -16,4 +16,4 @@ Entregar su reciclaje acumulado desde su casa de forma rápida y responsable.
 No conoce los horarios ni las rutas de los recolectores. Al acumularse el material, termina tirándolo a la basura común por falta de espacio.
 
 ## Necesidad
-Una app rápida para avisar en segundos que tiene material listo y coordinar el retiro en su puerta.
+Una forma de comunicarme con el recolector
