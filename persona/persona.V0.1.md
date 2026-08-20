@@ -1,5 +1,3 @@
-
-
 # Persona v0.1 - Plataforma de Reciclaje Urbano
 
 ## Perfil
