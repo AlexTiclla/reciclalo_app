@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
 
@@ -59,12 +60,13 @@ class ApiClient {
     String path,
     Map<String, String> fields,
     String fileField,
-    String filePath,
+    Uint8List fileBytes,
+    String fileName,
   ) async {
     final request = http.MultipartRequest('POST', _uri(path))
       ..headers.addAll(_authHeaders)
       ..fields.addAll(fields)
-      ..files.add(await http.MultipartFile.fromPath(fileField, filePath));
+      ..files.add(http.MultipartFile.fromBytes(fileField, fileBytes, filename: fileName));
 
     final streamedResponse = await request.send();
     final response = await http.Response.fromStream(streamedResponse);

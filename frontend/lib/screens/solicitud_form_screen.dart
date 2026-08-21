@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -26,6 +26,7 @@ class _SolicitudFormScreenState extends State<SolicitudFormScreen> {
   int _paso = 0;
   TipoMaterial? _tipoMaterial;
   XFile? _foto;
+  Uint8List? _fotoBytes;
   double? _latitud;
   double? _longitud;
   bool _obteniendoUbicacion = false;
@@ -47,7 +48,14 @@ class _SolicitudFormScreenState extends State<SolicitudFormScreen> {
 
   Future<void> _tomarFoto(ImageSource source) async {
     final foto = await _picker.pickImage(source: source, imageQuality: 85);
-    if (foto != null) setState(() => _foto = foto);
+    if (foto == null) return;
+
+    final bytes = await foto.readAsBytes();
+    if (!mounted) return;
+    setState(() {
+      _foto = foto;
+      _fotoBytes = bytes;
+    });
   }
 
   Future<void> _confirmarUbicacion() async {
@@ -76,7 +84,8 @@ class _SolicitudFormScreenState extends State<SolicitudFormScreen> {
     try {
       await _service.publicar(
         tipoMaterial: _tipoMaterial!,
-        fotoPath: _foto!.path,
+        fotoBytes: _fotoBytes!,
+        fotoNombre: _foto!.name,
         latitud: _latitud!,
         longitud: _longitud!,
         direccionReferencia: _direccionController.text.trim(),
@@ -177,9 +186,9 @@ class _SolicitudFormScreenState extends State<SolicitudFormScreen> {
                             Text('Toca para tomar una foto', style: TextStyle(color: Colors.grey.shade600)),
                           ],
                         )
-                      : ClipRRect(
+                        : ClipRRect(
                           borderRadius: BorderRadius.circular(12),
-                          child: Image.file(File(_foto!.path), fit: BoxFit.cover, width: double.infinity),
+                          child: Image.memory(_fotoBytes!, fit: BoxFit.cover, width: double.infinity),
                         ),
                 ),
               ),

@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import '../models/solicitud.dart';
 import 'api_client.dart';
 
@@ -24,7 +26,8 @@ class SolicitudesService {
 
   Future<Solicitud> publicar({
     required TipoMaterial tipoMaterial,
-    required String fotoPath,
+    required Uint8List fotoBytes,
+    required String fotoNombre,
     required double latitud,
     required double longitud,
     String direccionReferencia = '',
@@ -40,7 +43,8 @@ class SolicitudesService {
         'direccion_referencia': direccionReferencia,
       },
       'foto',
-      fotoPath,
+      fotoBytes,
+      fotoNombre,
     );
     return Solicitud.fromJson(data as Map<String, dynamic>);
   }
