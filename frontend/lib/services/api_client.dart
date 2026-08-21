@@ -9,7 +9,7 @@ import 'package:http/http.dart' as http;
 /// - Celular físico (Android/iOS) en la misma red WiFi que el PC: usar la IP
 ///   LAN del PC (ver `ip addr` / `hostname -I` en Linux, `ipconfig` en Windows),
 ///   y arrancar el backend con `python manage.py runserver 0.0.0.0:8000`.
-const String backendBaseUrl = 'http://192.168.1.152:8000';
+const String backendBaseUrl = 'http://localhost:8000';
 
 class ApiException implements Exception {
   ApiException(this.message, {this.statusCode});
