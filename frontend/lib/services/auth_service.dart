@@ -1,21 +1,48 @@
-import 'api_client.dart';
+import 'package:frontend/models/user_model.dart';
+import 'package:frontend/services/api_client.dart';
 
 class AuthService {
-  AuthService(this._client);
+  final ApiClient client;
 
-  final ApiClient _client;
+  AuthService(this.client);
 
+  /// Inicia sesión consumiendo POST /api/auth/login/
   Future<void> login(String username, String password) async {
-    final data = await _client.postJson('/api/auth/login/', {
+    final response = await client.postJson('/api/auth/login/', {
       'username': username,
       'password': password,
     });
-    _client.setToken(data['token'] as String);
+
+    if (response != null && response['token'] != null) {
+      client.setToken(response['token']);
+    }
   }
 
+  /// Registra un nuevo usuario con rol ('Ciudadano' o 'Recolector')
+  /// consumiendo POST /api/roles/registro/
+  Future<Usuario> registrar({
+    required String username,
+    required String email,
+    required String password,
+    required RolUsuario rol,
+  }) async {
+    final response = await client.postJson('/api/roles/registro/', {
+      'username': username,
+      'email': email,
+      'password': password,
+      'rol': rol.value,
+    });
+
+    if (response != null) {
+      final usuario = Usuario.fromJson(response);
+      client.setToken(usuario.token);
+      return usuario;
+    }
+    throw ApiException('No se pudo procesar la respuesta del servidor');
+  }
+
+  /// Cierra la sesión eliminando el token del cliente API
   void logout() {
-    _client.setToken(null);
+    client.setToken(null);
   }
-
-  bool get isAuthenticated => _client.isAuthenticated;
 }
