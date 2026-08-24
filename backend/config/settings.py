@@ -25,7 +25,10 @@ SECRET_KEY = 'django-insecure-nmv4fh7^u+g67bur-)sy#+b81npkyqs1wtjkj+q2$%9bbdq&l^
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+# Desarrollo: además de localhost, se permite la IP LAN del PC para poder
+# probar desde un celular físico conectado a la misma red WiFi
+# (`python manage.py runserver 0.0.0.0:8000`).
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '192.168.1.152']
 
 
 # Application definition
@@ -37,10 +40,15 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'rest_framework',
+    'rest_framework.authtoken',
+    'corsheaders',
+    'solicitudes',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -119,6 +127,36 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.1/howto/static-files/
 
 STATIC_URL = 'static/'
+
+
+# Media files (fotos subidas por los usuarios)
+# https://docs.djangoproject.com/en/6.1/topics/files/
+
+MEDIA_URL = 'media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
+
+# Default primary key field type
+# https://docs.djangoproject.com/en/6.1/ref/settings/#default-auto-field
+
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+# Django REST Framework
+# https://www.django-rest-framework.org/api-guide/settings/
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+}
+
+# CORS (desarrollo): permitir la app Flutter (emulador/web) sin restricciones de origen.
+CORS_ALLOW_ALL_ORIGINS = DEBUG
 
 
 # Email
