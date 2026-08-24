@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-
-import '../services/api_client.dart';
-import '../services/auth_service.dart';
-import 'home_screen.dart';
+import 'registro_screen.dart';
+import '../../services/api_client.dart';
+import '../../services/auth_service.dart';
+import '../home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -25,11 +25,14 @@ class _LoginScreenState extends State<LoginScreen> {
       _error = null;
     });
     try {
-      await _authService.login(_usernameController.text.trim(), _passwordController.text);
-      if (!mounted) return;
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const HomeScreen()),
+      await _authService.login(
+        _usernameController.text.trim(),
+        _passwordController.text,
       );
+      if (!mounted) return;
+      Navigator.of(
+        context,
+      ).pushReplacement(MaterialPageRoute(builder: (_) => const HomeScreen()));
     } catch (_) {
       setState(() => _error = 'No pudimos ingresar. Revisa tus credenciales.');
     } finally {
@@ -37,7 +40,7 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  @override
+ @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
@@ -48,13 +51,27 @@ class _LoginScreenState extends State<LoginScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: 48),
-                Icon(Icons.eco_outlined, size: 40, color: Theme.of(context).colorScheme.primary),
+                Icon(
+                  Icons.eco_outlined,
+                  size: 40,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
                 const SizedBox(height: 8),
-                Text('EcoRecicla', style: Theme.of(context).textTheme.titleLarge),
+                Text(
+                  'EcoRecicla',
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
                 const SizedBox(height: 40),
-                Text('¡Hola de nuevo!', style: Theme.of(context).textTheme.headlineSmall),
+                Text(
+                  '¡Hola de nuevo!',
+                  style: Theme.of(context).textTheme.headlineSmall,
+                ),
                 const SizedBox(height: 4),
-                Text('Nos alegra verte por aquí.', style: TextStyle(color: Colors.grey.shade600)),
+                Text(
+                  'Nos alegra verte por aquí.',
+                  style: TextStyle(color: Colors.grey.shade600),
+                ),
                 const SizedBox(height: 32),
                 TextField(
                   controller: _usernameController,
@@ -83,10 +100,35 @@ class _LoginScreenState extends State<LoginScreen> {
                       ? const SizedBox(
                           height: 20,
                           width: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
                         )
                       : const Text('Ingresar'),
                 ),
+                const SizedBox(height: 16),
+                // Botón para ir al formulario de registro
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text('¿No tienes una cuenta?'),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => const RegistroScreen(),
+                          ),
+                        );
+                      },
+                      child: const Text(
+                        'Regístrate aquí',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
               ],
             ),
           ),
