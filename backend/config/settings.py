@@ -86,7 +86,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'recicladora',       # Nombre de la base de datos que creaste en pgAdmin
         'USER': 'postgres',            # Tu usuario de PostgreSQL (por defecto es postgres)
-        'PASSWORD': 'postgres.',     # La contraseña que usas para entrar a pgAdmin/Postgres
+        'PASSWORD': '209022892sC.',     # La contraseña que usas para entrar a pgAdmin/Postgres
         'HOST': 'localhost',           # O '127.0.0.1'
         'PORT': '5432',                # Puerto estándar de PostgreSQL
     }
