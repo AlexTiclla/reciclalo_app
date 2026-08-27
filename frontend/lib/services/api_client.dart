@@ -10,7 +10,11 @@ import 'package:http/http.dart' as http;
 /// - Celular físico (Android/iOS) en la misma red WiFi que el PC: usar la IP
 ///   LAN del PC (ver `ip addr` / `hostname -I` en Linux, `ipconfig` en Windows),
 ///   y arrancar el backend con `python manage.py runserver 0.0.0.0:8000`.
-const String backendBaseUrl = 'http://192.168.1.186:8000';
+/// Alex
+///const String backendBaseUrl = 'http://192.168.1.186:8000';
+///juan
+///const String backendBaseUrl = 'http://127.0.0.1:8000';
+const String backendBaseUrl = 'http://10.0.2.2:8000';
 
 class ApiException implements Exception {
   ApiException(this.message, {this.statusCode});
@@ -66,7 +70,9 @@ class ApiClient {
     final request = http.MultipartRequest('POST', _uri(path))
       ..headers.addAll(_authHeaders)
       ..fields.addAll(fields)
-      ..files.add(http.MultipartFile.fromBytes(fileField, fileBytes, filename: fileName));
+      ..files.add(
+        http.MultipartFile.fromBytes(fileField, fileBytes, filename: fileName),
+      );
 
     final streamedResponse = await request.send();
     final response = await http.Response.fromStream(streamedResponse);
