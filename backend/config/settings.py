@@ -28,7 +28,7 @@ DEBUG = True
 # Desarrollo: además de localhost, se permite la IP LAN del PC para poder
 # probar desde un celular físico conectado a la misma red WiFi
 # (`python manage.py runserver 0.0.0.0:8000`).
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '192.168.1.152']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '192.168.1.186', '10.0.2.2']
 
 
 # Application definition

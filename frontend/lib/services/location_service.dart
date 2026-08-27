@@ -30,4 +30,17 @@ class LocationService {
 
     return Geolocator.getCurrentPosition();
   }
+
+  /// Emite la posición del recolector mientras se mueve.
+  ///
+  /// El filtro por distancia (en vez de un temporizador) evita despertar el GPS
+  /// cuando está parado, que es lo que más batería consume en una jornada.
+  Stream<Position> flujoUbicacion({int metrosMinimos = 50}) {
+    return Geolocator.getPositionStream(
+      locationSettings: LocationSettings(
+        accuracy: LocationAccuracy.high,
+        distanceFilter: metrosMinimos,
+      ),
+    );
+  }
 }

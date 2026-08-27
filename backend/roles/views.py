@@ -2,7 +2,7 @@ from django.contrib.auth.models import Group
 from rest_framework import status, viewsets
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.permissions import AllowAny, IsAdminUser
+from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
 from rest_framework.authtoken.models import Token
 
 from .serializers import GroupSerializer, RegistroUsuarioSerializer
@@ -45,3 +45,22 @@ class GroupViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Group.objects.all()
     serializer_class = GroupSerializer
     permission_classes = [IsAdminUser]
+
+class PerfilActualView(APIView):
+    """
+    Devuelve el usuario autenticado y su rol, para que el cliente sepa a qué
+    flujo entrar después del login (el endpoint de login solo emite el token).
+    GET /api/auth/me/
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        grupo = request.user.groups.first()
+        return Response({
+            "user_id": request.user.id,
+            "username": request.user.username,
+            "email": request.user.email,
+            "first_name": request.user.first_name,
+            "last_name": request.user.last_name,
+            "rol": grupo.name if grupo else None,
+        })

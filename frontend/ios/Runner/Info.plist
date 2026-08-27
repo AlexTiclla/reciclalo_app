@@ -27,7 +27,7 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Usamos tu ubicación para confirmar el punto de retiro de tu reciclaje.</string>
+	<string>Usamos tu ubicación para confirmar el punto de retiro y, si eres recolector, para mostrarte las solicitudes cercanas.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>Usamos la cámara para tomar la foto de tu paquete de reciclaje.</string>
 	<key>NSPhotoLibraryUsageDescription</key>

@@ -27,7 +27,9 @@ class _HistorialScreenState extends State<HistorialScreen> {
   Widget build(BuildContext context) {
     return RefreshIndicator(
       onRefresh: () async {
-        setState(() => _completadas = _service.listarCompletadas());
+        setState(() {
+          _completadas = _service.listarCompletadas();
+        });
         await _completadas;
       },
       child: ListView(

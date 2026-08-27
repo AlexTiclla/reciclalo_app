@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+
+import '../../routing.dart';
 import 'registro_screen.dart';
 import '../../services/api_client.dart';
 import '../../services/auth_service.dart';
-import '../home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -25,14 +26,14 @@ class _LoginScreenState extends State<LoginScreen> {
       _error = null;
     });
     try {
-      await _authService.login(
+      final usuario = await _authService.login(
         _usernameController.text.trim(),
         _passwordController.text,
       );
       if (!mounted) return;
-      Navigator.of(
-        context,
-      ).pushReplacement(MaterialPageRoute(builder: (_) => const HomeScreen()));
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => pantallaInicialPara(usuario.rol)),
+      );
     } catch (_) {
       setState(() => _error = 'No pudimos ingresar. Revisa tus credenciales.');
     } finally {
