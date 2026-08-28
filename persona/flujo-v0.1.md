@@ -32,7 +32,7 @@
 ```
 
 
-# Flujo v0.1 — Vista Recolector (Tarea Principal)
+# Flujo v0.2 — Vista Recolector (Tarea Principal)
 
 ## Tarea Única
 **Aceptar y completar una solicitud de recolección cercana.**
