@@ -40,16 +40,16 @@ abstract final class EcoColors {
   static const whatsappDark = Color(0xFF075E54);
 }
 
-/// Espaciados del design system. Usarlos en vez de números sueltos mantiene el
-/// ritmo vertical consistente entre pantallas.
+/// Espaciados del design system basados estrictamente en escala de 8 px.
+/// Mantiene el ritmo vertical y consistencia según la guía de IHC.
 abstract final class EcoSpacing {
-  static const double element = 8;
-  static const double stack = 16;
-  static const double container = 20;
-  static const double section = 32;
+  static const double element = 8;     // 8px  - Pequeña separación
+  static const double stack = 16;      // 16px - Contenido relacionado
+  static const double container = 24;  // 24px - Entre grupos
+  static const double section = 32;    // 32px - Entre secciones
 
   /// Alto mínimo de un objetivo táctil (guía de accesibilidad de Material).
-  static const double touchTarget = 48;
+  static const double touchTarget = 48; // Múltiplo de 8 (8 x 6)
 }
 
 abstract final class EcoRadius {

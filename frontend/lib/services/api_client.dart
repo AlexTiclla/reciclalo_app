@@ -13,8 +13,8 @@ import 'package:http/http.dart' as http;
 /// Alex
 ///const String backendBaseUrl = 'http://192.168.1.186:8000';
 ///juan
-///const String backendBaseUrl = 'http://127.0.0.1:8000';
-const String backendBaseUrl = 'http://10.0.2.2:8000';
+const String backendBaseUrl = 'http://127.0.0.1:8000';
+///const String backendBaseUrl = 'http://10.0.2.2:8000';
 
 class ApiException implements Exception {
   ApiException(this.message, {this.statusCode});
