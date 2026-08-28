@@ -35,6 +35,16 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
 
+  http: ^1.2.2
+  image_picker: ^1.1.2
+  geolocator: ^13.0.1
+
+  # Flujo del recolector: mapa interactivo (OpenStreetMap, sin API key) y
+  # apertura de apps externas (Google Maps para navegar, WhatsApp para contactar).
+  flutter_map: ^8.3.1
+  latlong2: ^0.9.1
+  url_launcher: ^6.3.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

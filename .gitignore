@@ -1,0 +1,11 @@
+# Editors / OS (repo-wide safety net; app-specific ignores live in backend/.gitignore and frontend/.gitignore)
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# Environment variables / secrets
+.env
+.env.*
+!.env.example
