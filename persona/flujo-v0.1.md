@@ -29,3 +29,47 @@
 [ Pantalla de Confirmación / Estado ]
        │
        └──> Estado visible: "Buscando recolector cercano"
+
+
+
+# Flujo v0.1 — Vista Recolector (Tarea Principal)
+
+## Tarea Única
+**Aceptar y completar una solicitud de recolección cercana.**
+
+---
+
+## Diagrama del Flujo (Camino Feliz / Happy Path)
+
+```text
+[ Pantalla Principal: Mapa de Solicitudes ]
+       │
+       ▼
+( 1. Tocar marcador de material en el mapa, ej. "Cartón" )
+       │
+       ▼
+[ Tarjeta Inferior de Previsualización ]
+       │
+       ├──> Ver material, distancia (0 m) y condición (Gratis)
+       │
+       ▼
+( 2. Tocar botón "Aceptar" )
+       │
+       ▼
+[ Modal de Confirmación ]
+       │
+       ▼
+( 3. Tocar botón "Sí, aceptar" )
+       │
+       ▼
+[ Pantalla de Solicitud Aceptada ]
+       │
+       ├──> Opcional: Navegar con "Ir a Google Maps" o coordinar por "WhatsApp"
+       │
+       ▼
+( 4. Tocar botón "✓ Marcar como completado" )
+       │
+       ▼
+[ Pantalla de Historial ]
+       │
+       └──> Estado visible: Registro de retiro finalizado guardado con éxito
