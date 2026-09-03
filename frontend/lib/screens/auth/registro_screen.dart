@@ -19,6 +19,9 @@ class _RegistroScreenState extends State<RegistroScreen> {
   bool _cargando = false;
   bool _ocultarPassword = true;
   String? _error;
+  bool _usernameFaltante = false;
+  bool _emailFaltante = false;
+  bool _passwordFaltante = false;
 
   final _authService = AuthService(ApiClient.instance);
 
@@ -36,11 +39,19 @@ class _RegistroScreenState extends State<RegistroScreen> {
     final password = _passwordController.text.trim();
 
     if (username.isEmpty || email.isEmpty || password.isEmpty) {
-      setState(() => _error = 'Por favor completa todos los campos.');
+      setState(() {
+        _usernameFaltante = username.isEmpty;
+        _emailFaltante = email.isEmpty;
+        _passwordFaltante = password.isEmpty;
+        _error = 'Por favor completa todos los campos.';
+      });
       return;
     }
 
     setState(() {
+      _usernameFaltante = false;
+      _emailFaltante = false;
+      _passwordFaltante = false;
       _cargando = true;
       _error = null;
     });
@@ -119,10 +130,16 @@ class _RegistroScreenState extends State<RegistroScreen> {
                       // Input Usuario
                       TextField(
                         controller: _usernameController,
+                        onChanged: (value) {
+                          if (_usernameFaltante && value.trim().isNotEmpty) {
+                            setState(() => _usernameFaltante = false);
+                          }
+                        },
                         decoration: InputDecoration(
                           labelText: 'Nombre de Usuario',
                           prefixIcon: const Icon(Icons.person_outline),
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          errorText: _usernameFaltante ? '' : null,
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -131,10 +148,16 @@ class _RegistroScreenState extends State<RegistroScreen> {
                       TextField(
                         controller: _emailController,
                         keyboardType: TextInputType.emailAddress,
+                        onChanged: (value) {
+                          if (_emailFaltante && value.trim().isNotEmpty) {
+                            setState(() => _emailFaltante = false);
+                          }
+                        },
                         decoration: InputDecoration(
                           labelText: 'Correo Electrónico',
                           prefixIcon: const Icon(Icons.email_outlined),
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          errorText: _emailFaltante ? '' : null,
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -143,6 +166,11 @@ class _RegistroScreenState extends State<RegistroScreen> {
                       TextField(
                         controller: _passwordController,
                         obscureText: _ocultarPassword,
+                        onChanged: (value) {
+                          if (_passwordFaltante && value.trim().isNotEmpty) {
+                            setState(() => _passwordFaltante = false);
+                          }
+                        },
                         decoration: InputDecoration(
                           labelText: 'Contraseña',
                           prefixIcon: const Icon(Icons.lock_outline),
@@ -151,6 +179,7 @@ class _RegistroScreenState extends State<RegistroScreen> {
                             onPressed: () => setState(() => _ocultarPassword = !_ocultarPassword),
                           ),
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          errorText: _passwordFaltante ? '' : null,
                         ),
                       ),
                       const SizedBox(height: 24),
