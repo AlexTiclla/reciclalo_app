@@ -24,8 +24,9 @@ import 'request_details_screen.dart';
 /// Al tocar un pin se abre la vista previa; desde ahí se entra al detalle o se
 /// acepta directamente.
 class PickerMapScreen extends StatefulWidget {
-  const PickerMapScreen({super.key, this.radioKm = 5});
+  const PickerMapScreen({super.key, required this.onAbrirPerfil, this.radioKm = 5});
 
+  final VoidCallback onAbrirPerfil;
   final double radioKm;
 
   @override
@@ -208,6 +209,15 @@ class _PickerMapScreenState extends State<PickerMapScreen> {
             ),
           ),
 
+          // Ícono de perfil: el mapa no tiene AppBar propio (es a pantalla
+          // completa), así que este botón flotante cumple el mismo rol que
+          // el ícono de perfil del resto de las pantallas raíz.
+          Positioned(
+            top: MediaQuery.of(context).padding.top + EcoSpacing.element,
+            right: EcoSpacing.container,
+            child: _BotonPerfil(onPressed: widget.onAbrirPerfil),
+          ),
+
           if (_error != null) _MensajeError(mensaje: _error!, onReintentar: _inicializar),
 
           // Botón de recentrado, elevado cuando la vista previa está abierta
@@ -333,6 +343,27 @@ class _BotonUbicacion extends StatelessWidget {
       shape: const CircleBorder(),
       tooltip: 'Centrar en mi ubicación',
       child: const Icon(Icons.my_location),
+    );
+  }
+}
+
+class _BotonPerfil extends StatelessWidget {
+  const _BotonPerfil({required this.onPressed});
+
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: EcoColors.surface,
+      shape: const CircleBorder(),
+      elevation: 2,
+      child: IconButton(
+        onPressed: onPressed,
+        color: EcoColors.primary,
+        tooltip: 'Perfil',
+        icon: const Icon(Icons.account_circle_outlined),
+      ),
     );
   }
 }

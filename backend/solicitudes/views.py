@@ -312,8 +312,21 @@ class SolicitudRetiroViewSet(viewsets.ModelViewSet):
                     status=status.HTTP_409_CONFLICT,
                 )
 
+            try:
+                peso_kg = Decimal(str(request.data.get('peso_kg')))
+            except (InvalidOperation, TypeError):
+                return Response(
+                    {'error': 'peso_kg es requerido y debe ser un número'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            if peso_kg <= 0:
+                return Response(
+                    {'error': 'peso_kg debe ser mayor que 0'}, status=status.HTTP_400_BAD_REQUEST
+                )
+
             solicitud.estado = EstadoSolicitud.COMPLETADA
-            solicitud.save(update_fields=['estado', 'actualizado_en'])
+            solicitud.peso_kg = peso_kg
+            solicitud.save(update_fields=['estado', 'peso_kg', 'actualizado_en'])
 
             asignacion = (
                 AsignacionRetiro.objects.filter(
@@ -330,6 +343,11 @@ class SolicitudRetiroViewSet(viewsets.ModelViewSet):
             Recolector.objects.filter(pk=perfil.pk).update(
                 total_completadas=perfil.total_completadas + 1
             )
+
+        # Fuera del `atomic()`: la app `gamificacion` maneja su propia
+        # transacción (saldo + ledger + evento pendiente).
+        from gamificacion.services import acreditar_por_completado
+        acreditar_por_completado(asignacion)
 
         serializer = AsignacionRetiroSerializer(
             asignacion, context=self.get_serializer_context()
