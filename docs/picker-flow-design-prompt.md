@@ -202,7 +202,7 @@ Show the accepted request with options to navigate to the pickup location and co
 | On Surface (Text) | #191c1d |
 | Error Red | #E63946 |
 | Status Blue (Pending) | #457B9D |
-| Headline Font | Plus Jakarta Sans (700 weight) |
+| Headline Font | Inter (700 weight) |
 | Body Font | Inter (400 weight) |
 | Border Radius (Standard) | 0.5rem (8px) |
 | Touch Target Height | 48px |
