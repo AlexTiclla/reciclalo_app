@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'solicitudes',
     'roles',
+    'gamificacion',
 ]
 
 MIDDLEWARE = [

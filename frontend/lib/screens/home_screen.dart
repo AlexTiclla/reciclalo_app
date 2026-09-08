@@ -1,13 +1,19 @@
 import 'package:flutter/material.dart';
 
+import '../models/evento_pendiente.dart';
 import '../models/solicitud.dart';
 import '../services/api_client.dart';
 import '../services/auth_service.dart';
+import '../services/gamificacion_service.dart';
 import '../services/solicitudes_service.dart';
+import '../widgets/eco_app_bar.dart';
+import '../widgets/ecopuntos_modal.dart';
+import '../widgets/hito_racha_modal.dart';
 import '../widgets/solicitud_card.dart';
 import 'auth/login_screen.dart';
 import 'historial_screen.dart';
 import 'perfil_ciudadano_screen.dart';
+import 'recompensas_screen.dart';
 import 'solicitud_detalle_screen.dart';
 import 'solicitud_form_screen.dart';
 
@@ -18,15 +24,52 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-// Las pestañas reales (Inicio, Historial, Perfil); "Nuevo" no es una
-// pestaña, solo abre el formulario como pantalla independiente.
+// Las pestañas reales (Inicio, Historial, Recompensas); "Nuevo" no es una
+// pestaña, solo abre el formulario como pantalla independiente. El Perfil ya
+// no es pestaña: se accede desde el ícono de la esquina superior derecha.
 const _destinoInicio = 0;
 const _destinoNuevo = 1;
 const _destinoHistorial = 2;
-const _destinoPerfil = 3;
+const _destinoRecompensas = 3;
 
 class _HomeScreenState extends State<HomeScreen> {
   int _tabIndex = _destinoInicio;
+  final _gamificacionService = GamificacionService(ApiClient.instance);
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _mostrarEventosPendientes());
+  }
+
+  Future<void> _mostrarEventosPendientes() async {
+    List<EventoPendiente> eventos;
+    try {
+      eventos = await _gamificacionService.eventosPendientes();
+    } catch (_) {
+      return;
+    }
+
+    for (final evento in eventos) {
+      if (!mounted) return;
+      if (evento.tipo == TipoEventoPendiente.acreditacion) {
+        await EcoPuntosModal.mostrar(
+          context,
+          puntos: evento.payload['puntos'] as int,
+          saldoTotal: evento.payload['saldo_total'] as int,
+          onVerRecompensas: () => setState(() => _tabIndex = _destinoRecompensas),
+        );
+      } else {
+        await HitoRachaModal.mostrar(
+          context,
+          rachaSemanas: evento.payload['racha_semanas'] as int,
+          puntos: evento.payload['puntos'] as int,
+          onExplorarRecompensas: () => setState(() => _tabIndex = _destinoRecompensas),
+        );
+      }
+      await _gamificacionService.marcarEventoVisto(evento.id);
+    }
+  }
 
   void _cerrarSesion() {
     AuthService(ApiClient.instance).logout();
@@ -36,15 +79,32 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  void _abrirPerfil() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => PerfilCiudadanoScreen(onCerrarSesion: _cerrarSesion),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final tabs = {
       _destinoInicio: const _HomeTab(),
       _destinoHistorial: const HistorialScreen(),
-      _destinoPerfil: PerfilCiudadanoScreen(onCerrarSesion: _cerrarSesion),
+      _destinoRecompensas: RecompensasScreen(onAbrirPerfil: _abrirPerfil),
     };
 
+    // RecompensasScreen ya trae su propio EcoAppBar; el resto comparte uno.
+    final mostrarAppBarPropio = _tabIndex != _destinoRecompensas;
+
     return Scaffold(
+      appBar: mostrarAppBarPropio
+          ? EcoAppBar(
+              titulo: _tabIndex == _destinoHistorial ? 'Historial' : 'Inicio',
+              onAbrirPerfil: _abrirPerfil,
+            )
+          : null,
       body: SafeArea(child: tabs[_tabIndex]!),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _tabIndex,
@@ -62,7 +122,7 @@ class _HomeScreenState extends State<HomeScreen> {
           NavigationDestination(icon: Icon(Icons.home_outlined), label: 'Inicio'),
           NavigationDestination(icon: Icon(Icons.add_circle_outline), label: 'Nuevo'),
           NavigationDestination(icon: Icon(Icons.history), label: 'Historial'),
-          NavigationDestination(icon: Icon(Icons.person_outline), label: 'Perfil'),
+          NavigationDestination(icon: Icon(Icons.card_giftcard_outlined), label: 'Recompensas'),
         ],
       ),
     );

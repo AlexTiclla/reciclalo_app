@@ -74,6 +74,9 @@ class SolicitudRetiro(models.Model):
     )
     # Teléfono al que el recolector escribe por WhatsApp (formato internacional).
     telefono_contacto = models.CharField(max_length=20, blank=True)
+    # Peso real entregado, capturado por el recolector al completar (Flujo 3,
+    # Paso 1). Nulo mientras la solicitud está pendiente/aceptada.
+    peso_kg = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
     estado = models.CharField(
         max_length=20,
         choices=EstadoSolicitud.choices,

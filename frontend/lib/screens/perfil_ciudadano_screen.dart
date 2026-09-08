@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/user_model.dart';
 import '../services/api_client.dart';
 import '../services/auth_service.dart';
+import 'mi_impacto_screen.dart';
 
 /// Perfil del ciudadano: datos de cuenta y cierre de sesión.
 class PerfilCiudadanoScreen extends StatefulWidget {
@@ -86,6 +87,19 @@ class _PerfilCiudadanoScreenState extends State<PerfilCiudadanoScreen> {
                         ],
                       ),
                       const SizedBox(height: 32),
+                      Card(
+                        child: ListTile(
+                          leading: const Icon(Icons.eco, color: Colors.green),
+                          title: const Text('Mi Impacto y Racha'),
+                          trailing: const Icon(Icons.chevron_right),
+                          onTap: () => Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => MiImpactoScreen(rol: usuario.rol),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
                       OutlinedButton.icon(
                         onPressed: widget.onCerrarSesion,
                         icon: const Icon(Icons.logout),
