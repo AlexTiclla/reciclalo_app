@@ -52,5 +52,11 @@
             <action android:name="android.intent.action.VIEW"/>
             <data android:scheme="https"/>
         </intent>
+        <!-- Flujo 4: el Ciudadano puede llamar al Recolector desde la pantalla
+             de seguimiento (esquema `tel:`, no https). -->
+        <intent>
+            <action android:name="android.intent.action.DIAL"/>
+            <data android:scheme="tel"/>
+        </intent>
     </queries>
 </manifest>

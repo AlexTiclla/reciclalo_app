@@ -88,4 +88,97 @@ void main() {
           'Distancia no disponible');
     });
   });
+
+  group('Flujo 4 — coordinación y seguimiento', () {
+    test('lee estado_coordinacion, ventana y notas de entrega', () {
+      final solicitud = Solicitud.fromJson(jsonBase(extra: {
+        'estado_coordinacion': 'confirmada',
+        'ventana_inicio': '2026-08-25T15:00:00Z',
+        'ventana_fin': '2026-08-25T18:00:00Z',
+        'notas_entrega': 'Tocar timbre del portón azul',
+      }));
+
+      expect(solicitud.estadoCoordinacion, EstadoCoordinacion.confirmada);
+      expect(solicitud.ventanaInicio, DateTime.parse('2026-08-25T15:00:00Z'));
+      expect(solicitud.ventanaFin, DateTime.parse('2026-08-25T18:00:00Z'));
+      expect(solicitud.notasEntrega, 'Tocar timbre del portón azul');
+    });
+
+    test('sin estado_coordinacion en el JSON, cae a "pendiente"', () {
+      final solicitud = Solicitud.fromJson(jsonBase());
+
+      expect(solicitud.estadoCoordinacion, EstadoCoordinacion.pendiente);
+    });
+
+    test('recolector_ubicacion ausente no revienta el parseo', () {
+      final solicitud = Solicitud.fromJson(jsonBase());
+
+      expect(solicitud.recolectorUbicacion, isNull);
+    });
+
+    test('recolector_ubicacion presente se parsea completa', () {
+      final solicitud = Solicitud.fromJson(jsonBase(extra: {
+        'recolector_ubicacion': {
+          'latitud': '-17.393700',
+          'longitud': '-66.157000',
+          'actualizado_en': '2026-08-25T14:58:00Z',
+        },
+      }));
+
+      expect(solicitud.recolectorUbicacion?.latitud, -17.3937);
+      expect(solicitud.recolectorUbicacion?.actualizadoEn,
+          DateTime.parse('2026-08-25T14:58:00Z'));
+    });
+
+    test('puntos_acreditados y peso_kg nulos antes de completar', () {
+      final solicitud = Solicitud.fromJson(jsonBase());
+
+      expect(solicitud.puntosAcreditados, isNull);
+      expect(solicitud.pesoKg, isNull);
+    });
+
+    test('mi_calificacion ausente deja el campo nulo', () {
+      final solicitud = Solicitud.fromJson(jsonBase());
+
+      expect(solicitud.miCalificacion, isNull);
+    });
+
+    test('mi_calificacion presente se parsea con sus etiquetas', () {
+      final solicitud = Solicitud.fromJson(jsonBase(extra: {
+        'mi_calificacion': {
+          'calificacion': 5,
+          'etiquetas': ['Puntual', 'Amable y respetuoso'],
+          'comentario': 'Excelente atención',
+        },
+      }));
+
+      expect(solicitud.miCalificacion?.estrellas, 5);
+      expect(solicitud.miCalificacion?.etiquetas, ['Puntual', 'Amable y respetuoso']);
+      expect(solicitud.miCalificacion?.comentario, 'Excelente atención');
+    });
+
+    test('recolector con telefono y calificacion_promedio', () {
+      final solicitud = Solicitud.fromJson(jsonBase(extra: {
+        'recolector': {
+          'id': 3,
+          'nombre': 'Carlos',
+          'telefono': '+59170000001',
+          'total_completadas': 126,
+          'calificacion_promedio': 4.8,
+        },
+      }));
+
+      expect(solicitud.recolector?.tieneTelefono, isTrue);
+      expect(solicitud.recolector?.calificacionPromedio, 4.8);
+      expect(solicitud.recolector?.totalCompletadas, 126);
+    });
+
+    test('recolector sin calificaciones expone null, no un número inventado', () {
+      final solicitud = Solicitud.fromJson(jsonBase(extra: {
+        'recolector': {'id': 3, 'nombre': 'Carlos'},
+      }));
+
+      expect(solicitud.recolector?.calificacionPromedio, isNull);
+    });
+  });
 }

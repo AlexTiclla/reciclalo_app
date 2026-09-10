@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../models/solicitud.dart';
+import '../routing_coordinacion.dart';
 import '../services/api_client.dart';
 import '../services/solicitudes_service.dart';
 import '../widgets/solicitud_card.dart';
-import 'solicitud_detalle_screen.dart';
 
 class HistorialScreen extends StatefulWidget {
   const HistorialScreen({super.key});
@@ -63,11 +63,7 @@ class _HistorialScreenState extends State<HistorialScreen> {
                     .map(
                       (solicitud) => SolicitudCard(
                         solicitud: solicitud,
-                        onTap: () => Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => SolicitudDetalleScreen(solicitudId: solicitud.id),
-                          ),
-                        ),
+                        onTap: () => abrirCoordinacion(context, solicitud),
                       ),
                     )
                     .toList(),

@@ -103,6 +103,36 @@ class PickerService {
     return AsignacionRetiro.fromJson(data as Map<String, dynamic>);
   }
 
+  // --- Coordinación de franja y seguimiento (Flujo 4) -----------------------
+
+  Future<Solicitud> proponerFranja(
+    int solicitudId, {
+    required DateTime inicio,
+    required DateTime fin,
+  }) async {
+    final data = await _client.postJson('/api/solicitudes/$solicitudId/proponer-franja/', {
+      'ventana_inicio': inicio.toIso8601String(),
+      'ventana_fin': fin.toIso8601String(),
+    });
+    return Solicitud.fromJson(data as Map<String, dynamic>);
+  }
+
+  Future<Solicitud> aceptarFranja(int solicitudId) async {
+    final data = await _client.postJson('/api/solicitudes/$solicitudId/aceptar-franja/', const {});
+    return Solicitud.fromJson(data as Map<String, dynamic>);
+  }
+
+  Future<Solicitud> enCamino(int solicitudId) async {
+    final data = await _client.postJson('/api/solicitudes/$solicitudId/en-camino/', const {});
+    return Solicitud.fromJson(data as Map<String, dynamic>);
+  }
+
+  /// Teléfono de contacto que el Ciudadano ve en las Screens 2/3 del Flujo 4.
+  Future<PerfilRecolector> actualizarTelefono(String telefono) async {
+    final data = await _client.postJson('/api/recolector/telefono/', {'telefono': telefono});
+    return PerfilRecolector.fromJson(data as Map<String, dynamic>);
+  }
+
   Future<List<AsignacionRetiro>> solicitudesAceptadas() =>
       _asignaciones('/api/recolector/solicitudes-aceptadas/');
 
