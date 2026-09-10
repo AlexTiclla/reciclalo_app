@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
 
@@ -14,6 +15,18 @@ class EstadoSolicitud(models.TextChoices):
     ACEPTADA = 'aceptada', 'Aceptada'
     EN_CAMINO = 'en_camino', 'En camino'
     COMPLETADA = 'completada', 'Completada'
+
+
+class EstadoCoordinacion(models.TextChoices):
+    """
+    Coordinación de franja horaria (Flujo 4), independiente de `EstadoSolicitud`.
+    Solo tiene sentido mientras la solicitud está `aceptada`/`en_camino`.
+    """
+
+    PENDIENTE = 'pendiente', 'Sin franja'
+    PROPUESTA_CIUDADANO = 'propuesta_ciudadano', 'Propuesta por el ciudadano'
+    PROPUESTA_RECOLECTOR = 'propuesta_recolector', 'Propuesta por el recolector'
+    CONFIRMADA = 'confirmada', 'Confirmada'
 
 
 class Recolector(models.Model):
@@ -41,6 +54,10 @@ class Recolector(models.Model):
     )
     ultimo_ping = models.DateTimeField(auto_now=True)
     total_completadas = models.PositiveIntegerField(default=0)
+    # Para que el Ciudadano pueda contactarlo (Flujo 4) — mismo formato libre
+    # que `SolicitudRetiro.telefono_contacto`.
+    telefono = models.CharField(max_length=20, blank=True)
+    foto = models.ImageField(upload_to='recolectores/', null=True, blank=True)
     creado_en = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -92,6 +109,18 @@ class SolicitudRetiro(models.Model):
     creado_en = models.DateTimeField(auto_now_add=True)
     actualizado_en = models.DateTimeField(auto_now=True)
 
+    # --- Coordinación de franja horaria (Flujo 4) ---
+    estado_coordinacion = models.CharField(
+        max_length=25,
+        choices=EstadoCoordinacion.choices,
+        default=EstadoCoordinacion.PENDIENTE,
+    )
+    ventana_inicio = models.DateTimeField(null=True, blank=True)
+    ventana_fin = models.DateTimeField(null=True, blank=True)
+    # Indicaciones del ciudadano para el recolector, ej. "Tocar timbre del portón azul".
+    notas_entrega = models.CharField(max_length=280, blank=True)
+    franja_confirmada_en = models.DateTimeField(null=True, blank=True)
+
     class Meta:
         ordering = ['-creado_en']
 
@@ -129,6 +158,20 @@ class AsignacionRetiro(models.Model):
     aceptada_en = models.DateTimeField(auto_now_add=True)
     completada_en = models.DateTimeField(null=True, blank=True)
     notas = models.TextField(blank=True)
+
+    # --- Seguimiento del retiro (Flujo 4) ---
+    en_camino_en = models.DateTimeField(null=True, blank=True)
+    llego_en = models.DateTimeField(null=True, blank=True)
+
+    # --- Calificación del ciudadano al recolector, tras `completada` (Flujo 4) ---
+    calificacion = models.PositiveSmallIntegerField(
+        null=True, blank=True,
+        validators=[MinValueValidator(1), MaxValueValidator(5)],
+    )
+    # Etiquetas cortas elegidas de un set fijo definido en el frontend
+    # (ej. "Puntual", "Amable y respetuoso") — no hay catálogo administrable.
+    calificacion_etiquetas = models.JSONField(default=list, blank=True)
+    calificacion_comentario = models.CharField(max_length=200, blank=True)
 
     class Meta:
         ordering = ['-aceptada_en']

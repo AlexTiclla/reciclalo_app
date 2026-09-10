@@ -6,9 +6,10 @@ from .models import AsignacionRetiro, Recolector, SolicitudRetiro
 @admin.register(SolicitudRetiro)
 class SolicitudRetiroAdmin(admin.ModelAdmin):
     list_display = [
-        'id', 'usuario', 'tipo_material', 'precio', 'estado', 'recolector', 'creado_en'
+        'id', 'usuario', 'tipo_material', 'precio', 'estado',
+        'estado_coordinacion', 'recolector', 'creado_en',
     ]
-    list_filter = ['estado', 'tipo_material']
+    list_filter = ['estado', 'estado_coordinacion', 'tipo_material']
     search_fields = ['usuario__username', 'direccion_referencia']
     readonly_fields = ['creado_en', 'actualizado_en']
 
