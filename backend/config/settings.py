@@ -41,11 +41,19 @@ DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 
 # Desarrollo: además de localhost, se permite la IP LAN del PC para poder
 # probar desde un celular físico conectado a la misma red WiFi
-# (`python manage.py runserver 0.0.0.0:8000`). En producción se setea
-# ALLOWED_HOSTS como lista separada por comas (p. ej. "mi-app.onrender.com").
+# (`python manage.py runserver 0.0.0.0:8000`).
+#
+# Producción: Render inyecta RENDER_EXTERNAL_HOSTNAME solo (el dominio
+# *.onrender.com del propio servicio), así que no hace falta setear nada a
+# mano para el caso normal. ALLOWED_HOSTS como variable de entorno queda para
+# el caso de agregar un dominio propio más adelante.
 _allowed_hosts_env = os.environ.get('ALLOWED_HOSTS')
+_render_hostname = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
+
 if _allowed_hosts_env:
     ALLOWED_HOSTS = [h.strip() for h in _allowed_hosts_env.split(',') if h.strip()]
+elif _render_hostname:
+    ALLOWED_HOSTS = [_render_hostname]
 else:
     ALLOWED_HOSTS = ['localhost', '127.0.0.1', '192.168.1.186', '10.0.2.2']
 
