@@ -38,6 +38,38 @@ class _PostAcceptScreenState extends State<PostAcceptScreen>
     super.dispose();
   }
 
+  Future<double?> _pedirPesoKg() {
+    final controlador = TextEditingController();
+    return showDialog<double>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Peso entregado'),
+        content: TextField(
+          controller: controlador,
+          autofocus: true,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          decoration: const InputDecoration(
+            labelText: 'Peso (kg)',
+            hintText: 'Ej. 3.5',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () {
+              final peso = double.tryParse(controlador.text.replaceAll(',', '.'));
+              Navigator.of(context).pop(peso != null && peso > 0 ? peso : null);
+            },
+            child: const Text('Confirmar'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _navegar() async {
     final messenger = ScaffoldMessenger.of(context);
     try {
@@ -51,9 +83,12 @@ class _PostAcceptScreenState extends State<PostAcceptScreen>
   }
 
   Future<void> _completar() async {
+    final pesoKg = await _pedirPesoKg();
+    if (pesoKg == null) return;
+
     setState(() => _completando = true);
     try {
-      await _pickerService.completar(widget.solicitud.id);
+      await _pickerService.completar(widget.solicitud.id, pesoKg: pesoKg);
       PickerEvents.instance.notificarCambio();
       if (!mounted) return;
 

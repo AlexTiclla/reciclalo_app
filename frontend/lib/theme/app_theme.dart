@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 /// Paleta del design system de EcoRecicla (tokens exportados desde Stitch).
 ///
@@ -112,6 +113,8 @@ const _textTheme = TextTheme(
   ),
 );
 
+TextTheme _interTextTheme() => GoogleFonts.interTextTheme(_textTheme);
+
 ThemeData buildEcoTheme() {
   final colorScheme = ColorScheme.fromSeed(
     seedColor: EcoColors.primary,
@@ -134,15 +137,16 @@ ThemeData buildEcoTheme() {
     useMaterial3: true,
     colorScheme: colorScheme,
     scaffoldBackgroundColor: EcoColors.surface,
-    textTheme: _textTheme,
-    appBarTheme: const AppBarTheme(
+    fontFamily: GoogleFonts.inter().fontFamily,
+    textTheme: _interTextTheme(),
+    appBarTheme: AppBarTheme(
       backgroundColor: EcoColors.surface,
       foregroundColor: EcoColors.onSurfaceVariant,
       surfaceTintColor: Colors.transparent,
       elevation: 0,
       scrolledUnderElevation: 0.5,
       centerTitle: true,
-      titleTextStyle: TextStyle(
+      titleTextStyle: GoogleFonts.inter(
         fontSize: 20,
         height: 28 / 20,
         fontWeight: FontWeight.w700,

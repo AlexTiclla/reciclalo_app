@@ -5,12 +5,15 @@ import '../../services/api_client.dart';
 import '../../services/picker_events.dart';
 import '../../services/picker_service.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/eco_app_bar.dart';
 import '../../widgets/picker/asignacion_card.dart';
 import 'post_accept_screen.dart';
 
 /// Retiros que el recolector aceptó y todavía no cierra.
 class MisRutasScreen extends StatefulWidget {
-  const MisRutasScreen({super.key});
+  const MisRutasScreen({super.key, required this.onAbrirPerfil});
+
+  final VoidCallback onAbrirPerfil;
 
   @override
   State<MisRutasScreen> createState() => _MisRutasScreenState();
@@ -45,7 +48,7 @@ class _MisRutasScreenState extends State<MisRutasScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Mis Rutas')),
+      appBar: EcoAppBar(titulo: 'Mis Rutas', onAbrirPerfil: widget.onAbrirPerfil),
       body: RefreshIndicator(
         onRefresh: _recargar,
         child: FutureBuilder<List<AsignacionRetiro>>(

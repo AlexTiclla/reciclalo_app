@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 
 import '../../models/perfil_recolector.dart';
+import '../../models/user_model.dart';
 import '../../services/api_client.dart';
 import '../../services/picker_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/picker/asignacion_card.dart';
+import '../mi_impacto_screen.dart';
 
 /// Perfil del recolector: disponibilidad, retiros completados y cierre de sesión.
 class PerfilRecolectorScreen extends StatefulWidget {
@@ -97,6 +99,19 @@ class _PerfilRecolectorScreenState extends State<PerfilRecolectorScreen> {
                         ),
                       ),
                       const SizedBox(height: EcoSpacing.section),
+                      Card(
+                        child: ListTile(
+                          leading: const Icon(Icons.eco, color: EcoColors.primary),
+                          title: const Text('Mi Impacto y Racha'),
+                          trailing: const Icon(Icons.chevron_right),
+                          onTap: () => Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const MiImpactoScreen(rol: RolUsuario.recolector),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: EcoSpacing.stack),
                       OutlinedButton.icon(
                         onPressed: widget.onCerrarSesion,
                         icon: const Icon(Icons.logout),

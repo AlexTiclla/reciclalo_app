@@ -10,25 +10,44 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.1/ref/settings/
 """
 
+import os
 from pathlib import Path
+
+import dj_database_url
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Carga backend/.env si existe (no versionado — ver .env.example). En el
+# servidor de producción las variables se setean por otro medio y esto es un
+# no-op silencioso.
+load_dotenv(BASE_DIR / '.env')
 
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-nmv4fh7^u+g67bur-)sy#+b81npkyqs1wtjkj+q2$%9bbdq&l^'
+# En producción (Render) se setea vía la variable de entorno SECRET_KEY; sin
+# ella, cae al valor de desarrollo de siempre para no romper el flujo local.
+SECRET_KEY = os.environ.get(
+    'SECRET_KEY',
+    'django-insecure-nmv4fh7^u+g67bur-)sy#+b81npkyqs1wtjkj+q2$%9bbdq&l^',
+)
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 
 # Desarrollo: además de localhost, se permite la IP LAN del PC para poder
 # probar desde un celular físico conectado a la misma red WiFi
-# (`python manage.py runserver 0.0.0.0:8000`).
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '192.168.1.186', '10.0.2.2']
+# (`python manage.py runserver 0.0.0.0:8000`). En producción se setea
+# ALLOWED_HOSTS como lista separada por comas (p. ej. "mi-app.onrender.com").
+_allowed_hosts_env = os.environ.get('ALLOWED_HOSTS')
+if _allowed_hosts_env:
+    ALLOWED_HOSTS = [h.strip() for h in _allowed_hosts_env.split(',') if h.strip()]
+else:
+    ALLOWED_HOSTS = ['localhost', '127.0.0.1', '192.168.1.186', '10.0.2.2']
 
 
 # Application definition
@@ -45,6 +64,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'solicitudes',
     'roles',
+    'gamificacion',
 ]
 
 MIDDLEWARE = [
@@ -57,6 +77,14 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+if not DEBUG:
+    # Sirve /static/ directamente desde gunicorn en producción (Render no
+    # tiene un servidor web separado delante como nginx). En dev, runserver
+    # ya sirve estáticos vía `django.contrib.staticfiles` sin esto — y sin
+    # STATIC_ROOT todavía poblado por `collectstatic`, WhiteNoise emite un
+    # warning al arrancar.
+    MIDDLEWARE.insert(1, 'whitenoise.middleware.WhiteNoiseMiddleware')
 
 ROOT_URLCONF = 'config.urls'
 
@@ -80,17 +108,27 @@ WSGI_APPLICATION = 'config.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/6.1/ref/settings/#databases
+#
+# En producción (Render) se setea DATABASE_URL apuntando al pooler de
+# Supabase; sin esa variable, cae al Postgres local de siempre para no romper
+# el flujo de desarrollo (`python manage.py test solicitudes`, etc.).
+_database_url = os.environ.get('DATABASE_URL')
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'recicladora',       # Nombre de la base de datos que creaste en pgAdmin
-        'USER': 'postgres',            # Tu usuario de PostgreSQL (por defecto es postgres)
-        'PASSWORD': '209022892sC.',     # La contraseña que usas para entrar a pgAdmin/Postgres
-        'HOST': 'localhost',           # O '127.0.0.1'
-        'PORT': '5432',                # Puerto estándar de PostgreSQL
+if _database_url:
+    DATABASES = {
+        'default': dj_database_url.parse(_database_url, ssl_require=True),
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': 'recicladora',       # Nombre de la base de datos que creaste en pgAdmin
+            'USER': 'postgres',            # Tu usuario de PostgreSQL (por defecto es postgres)
+            'PASSWORD': 'postgres',     # La contraseña que usas para entrar a pgAdmin/Postgres
+            'HOST': 'localhost',           # O '127.0.0.1'
+            'PORT': '5432',                # Puerto estándar de PostgreSQL
+        }
+    }
 
 
 # Password validation
@@ -128,13 +166,52 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.1/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'  # destino de `collectstatic` en producción
 
 
 # Media files (fotos subidas por los usuarios)
 # https://docs.djangoproject.com/en/6.1/topics/files/
-
+#
+# Render no ofrece disco persistente en sus planes estándar (el filesystem se
+# reinicia en cada deploy), así que en producción el storage por defecto pasa
+# a ser el bucket S3-compatible de Supabase Storage en vez de MEDIA_ROOT local.
+# Se activa solo si las 4 variables SUPABASE_S3_* están presentes; si no,
+# sigue sirviendo desde disco local como en desarrollo.
 MEDIA_URL = 'media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+AWS_S3_ENDPOINT_URL = os.environ.get('SUPABASE_S3_ENDPOINT', '')
+AWS_ACCESS_KEY_ID = os.environ.get('SUPABASE_S3_ACCESS_KEY_ID', '')
+AWS_SECRET_ACCESS_KEY = os.environ.get('SUPABASE_S3_SECRET_ACCESS_KEY', '')
+AWS_STORAGE_BUCKET_NAME = os.environ.get('SUPABASE_S3_BUCKET', '')
+
+_usando_supabase_storage = bool(
+    AWS_S3_ENDPOINT_URL and AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY and AWS_STORAGE_BUCKET_NAME
+)
+
+if _usando_supabase_storage:
+    AWS_S3_ADDRESSING_STYLE = 'path'
+    AWS_DEFAULT_ACL = None
+    AWS_QUERYSTRING_AUTH = False
+    DEFAULT_FILE_STORAGE_BACKEND = 'storages.backends.s3.S3Storage'
+else:
+    DEFAULT_FILE_STORAGE_BACKEND = 'django.core.files.storage.FileSystemStorage'
+
+# WhiteNoise comprime y versiona los estáticos, pero requiere `collectstatic`
+# corrido de antemano — en desarrollo (DEBUG=True) eso no pasa, así que ahí se
+# usa el storage plano de siempre y Django sigue sirviendo /static/ como hoy.
+STORAGES = {
+    'default': {
+        'BACKEND': DEFAULT_FILE_STORAGE_BACKEND,
+    },
+    'staticfiles': {
+        'BACKEND': (
+            'django.contrib.staticfiles.storage.StaticFilesStorage'
+            if DEBUG
+            else 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+        ),
+    },
+}
 
 
 # Default primary key field type
@@ -154,6 +231,18 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
     ],
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.ScopedRateThrottle',
+    ],
+    # Límites del Flujo 5 (recuperación de contraseña) — evitan que alguien
+    # agote la bandeja de correo de un tercero o fuerce el código por fuerza
+    # bruta. Sin scope, ScopedRateThrottle no limita nada (solo actúa sobre
+    # vistas que declaran `throttle_scope`), así que el resto de la API sigue
+    # sin límites propios por ahora.
+    'DEFAULT_THROTTLE_RATES': {
+        'recuperacion-solicitar': '5/hour',
+        'recuperacion-verificar': '20/hour',
+    },
 }
 
 # CORS (desarrollo): permitir la app Flutter (emulador/web) sin restricciones de origen.
@@ -162,9 +251,33 @@ CORS_ALLOW_ALL_ORIGINS = DEBUG
 
 # Email
 # https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration
+#
+# Envío vía Resend usando su SMTP relay (smtp.resend.com), así no hace falta
+# el SDK de Resend ni django-anymail: el backend SMTP estándar de Django ya
+# sirve. La API key vive en backend/.env (no versionado, ver .env.example) y
+# se toma como password SMTP — el usuario es literalmente "resend".
+#
+# Sin RESEND_API_KEY seteada (p. ej. clonando el repo por primera vez) cae al
+# backend de consola, así el Flujo 5 (recuperación de contraseña) se puede
+# probar imprimiendo el correo en la terminal de `runserver` sin credenciales.
+RESEND_API_KEY = os.environ.get('RESEND_API_KEY', '')
 
-MAILERS = {
-    'default': {
-        'BACKEND': 'django.core.mail.backends.console.EmailBackend',
-    },
-}
+if RESEND_API_KEY:
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+    EMAIL_HOST = 'smtp.resend.com'
+    EMAIL_PORT = 587
+    EMAIL_USE_TLS = True
+    EMAIL_HOST_USER = 'resend'
+    EMAIL_HOST_PASSWORD = RESEND_API_KEY
+else:
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+DEFAULT_FROM_EMAIL = os.environ.get(
+    'DEFAULT_FROM_EMAIL', 'EcoRecicla <no-reply@ecorecicla.local>'
+)
+
+# Ventana de expiración/reenvío/intentos del código OTP de recuperación
+# (Flujo 5 — ver docs/flujo-5-inicio-registro-recuperacion/).
+RECUPERACION_OTP_EXPIRA_MINUTOS = 10
+RECUPERACION_OTP_REENVIO_COOLDOWN_SEGUNDOS = 30
+RECUPERACION_OTP_MAX_INTENTOS = 5

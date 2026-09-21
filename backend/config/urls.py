@@ -27,6 +27,7 @@ urlpatterns = [
     path('api/auth/login/', obtain_auth_token, name='api-login'),
     path('api/auth/me/', PerfilActualView.as_view(), name='api-me'),
     path('api/', include('solicitudes.urls')),
+    path('api/', include('gamificacion.urls')),
     path('api/roles/', include('roles.urls')),
 ]
 

@@ -233,7 +233,7 @@ class TestCompletarSolicitud(PickerAPITestCase):
         self.client.post(f'/api/solicitudes/{self.solicitud.id}/aceptar/', {}, format='json')
 
         respuesta = self.client.post(
-            f'/api/solicitudes/{self.solicitud.id}/completar/', {}, format='json'
+            f'/api/solicitudes/{self.solicitud.id}/completar/', {'peso_kg': '3.5'}, format='json'
         )
 
         self.assertEqual(respuesta.status_code, status.HTTP_200_OK)
@@ -255,7 +255,7 @@ class TestCompletarSolicitud(PickerAPITestCase):
         self.client.force_authenticate(otro)
 
         respuesta = self.client.post(
-            f'/api/solicitudes/{self.solicitud.id}/completar/', {}, format='json'
+            f'/api/solicitudes/{self.solicitud.id}/completar/', {'peso_kg': '3.5'}, format='json'
         )
 
         self.assertEqual(respuesta.status_code, status.HTTP_403_FORBIDDEN)
@@ -263,13 +263,25 @@ class TestCompletarSolicitud(PickerAPITestCase):
     def test_completar_dos_veces_es_conflicto(self):
         self.autenticar_recolector()
         self.client.post(f'/api/solicitudes/{self.solicitud.id}/aceptar/', {}, format='json')
-        self.client.post(f'/api/solicitudes/{self.solicitud.id}/completar/', {}, format='json')
+        self.client.post(
+            f'/api/solicitudes/{self.solicitud.id}/completar/', {'peso_kg': '3.5'}, format='json'
+        )
+
+        respuesta = self.client.post(
+            f'/api/solicitudes/{self.solicitud.id}/completar/', {'peso_kg': '3.5'}, format='json'
+        )
+
+        self.assertEqual(respuesta.status_code, status.HTTP_409_CONFLICT)
+
+    def test_completar_sin_peso_es_error(self):
+        self.autenticar_recolector()
+        self.client.post(f'/api/solicitudes/{self.solicitud.id}/aceptar/', {}, format='json')
 
         respuesta = self.client.post(
             f'/api/solicitudes/{self.solicitud.id}/completar/', {}, format='json'
         )
 
-        self.assertEqual(respuesta.status_code, status.HTTP_409_CONFLICT)
+        self.assertEqual(respuesta.status_code, status.HTTP_400_BAD_REQUEST)
 
 
 class TestListadosDelRecolector(PickerAPITestCase):
@@ -279,7 +291,9 @@ class TestListadosDelRecolector(PickerAPITestCase):
 
         self.client.post(f'/api/solicitudes/{self.solicitud.id}/aceptar/', {}, format='json')
         self.client.post(f'/api/solicitudes/{otra.id}/aceptar/', {}, format='json')
-        self.client.post(f'/api/solicitudes/{otra.id}/completar/', {}, format='json')
+        self.client.post(
+            f'/api/solicitudes/{otra.id}/completar/', {'peso_kg': '2.0'}, format='json'
+        )
 
         aceptadas = self.client.get('/api/recolector/solicitudes-aceptadas/')
         completadas = self.client.get('/api/recolector/solicitudes-completadas/')

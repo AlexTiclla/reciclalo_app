@@ -95,10 +95,10 @@ class PickerService {
     return AsignacionRetiro.fromJson(data as Map<String, dynamic>);
   }
 
-  Future<AsignacionRetiro> completar(int solicitudId) async {
+  Future<AsignacionRetiro> completar(int solicitudId, {required double pesoKg}) async {
     final data = await _client.postJson(
       '/api/solicitudes/$solicitudId/completar/',
-      const {},
+      {'peso_kg': pesoKg.toStringAsFixed(2)},
     );
     return AsignacionRetiro.fromJson(data as Map<String, dynamic>);
   }

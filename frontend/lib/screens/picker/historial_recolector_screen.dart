@@ -5,11 +5,14 @@ import '../../services/api_client.dart';
 import '../../services/picker_events.dart';
 import '../../services/picker_service.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/eco_app_bar.dart';
 import '../../widgets/picker/asignacion_card.dart';
 
 /// Retiros ya completados por el recolector, del más reciente al más antiguo.
 class HistorialRecolectorScreen extends StatefulWidget {
-  const HistorialRecolectorScreen({super.key});
+  const HistorialRecolectorScreen({super.key, required this.onAbrirPerfil});
+
+  final VoidCallback onAbrirPerfil;
 
   @override
   State<HistorialRecolectorScreen> createState() =>
@@ -44,7 +47,7 @@ class _HistorialRecolectorScreenState extends State<HistorialRecolectorScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Historial')),
+      appBar: EcoAppBar(titulo: 'Historial', onAbrirPerfil: widget.onAbrirPerfil),
       body: RefreshIndicator(
         onRefresh: _recargar,
         child: FutureBuilder<List<AsignacionRetiro>>(

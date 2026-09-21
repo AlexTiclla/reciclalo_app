@@ -9,3 +9,4 @@ Thumbs.db
 .env
 .env.*
 !.env.example
+/stitch_ecorecicla_ciudadano
