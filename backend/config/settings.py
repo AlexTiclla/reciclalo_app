@@ -260,10 +260,11 @@ CORS_ALLOW_ALL_ORIGINS = DEBUG
 # Email
 # https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration
 #
-# Envío vía Resend usando su SMTP relay (smtp.resend.com), así no hace falta
-# el SDK de Resend ni django-anymail: el backend SMTP estándar de Django ya
-# sirve. La API key vive en backend/.env (no versionado, ver .env.example) y
-# se toma como password SMTP — el usuario es literalmente "resend".
+# Envío vía la API HTTP de Resend (`config.mail_backends.ResendAPIEmailBackend`),
+# no su relay SMTP: Render bloquea el tráfico saliente a los puertos SMTP en
+# sus planes free, lo que colgaba el request hasta que gunicorn mataba el
+# worker por timeout (ver docs/plan-despliegue.md). La API key vive en
+# backend/.env (no versionado, ver .env.example).
 #
 # Sin RESEND_API_KEY seteada (p. ej. clonando el repo por primera vez) cae al
 # backend de consola, así el Flujo 5 (recuperación de contraseña) se puede
@@ -271,12 +272,7 @@ CORS_ALLOW_ALL_ORIGINS = DEBUG
 RESEND_API_KEY = os.environ.get('RESEND_API_KEY', '')
 
 if RESEND_API_KEY:
-    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-    EMAIL_HOST = 'smtp.resend.com'
-    EMAIL_PORT = 587
-    EMAIL_USE_TLS = True
-    EMAIL_HOST_USER = 'resend'
-    EMAIL_HOST_PASSWORD = RESEND_API_KEY
+    EMAIL_BACKEND = 'config.mail_backends.ResendAPIEmailBackend'
 else:
     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
