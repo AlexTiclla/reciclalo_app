@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/6.1/ref/settings/
 
 import os
 from pathlib import Path
+from urllib.parse import urlparse
 
 import dj_database_url
 from dotenv import load_dotenv
@@ -202,6 +203,18 @@ if _usando_supabase_storage:
     AWS_DEFAULT_ACL = None
     AWS_QUERYSTRING_AUTH = False
     DEFAULT_FILE_STORAGE_BACKEND = 'storages.backends.s3.S3Storage'
+
+    # El endpoint S3 (`<ref>.storage.supabase.co/storage/v1/s3`) exige firma
+    # SigV4 en cada GET, incluso en un bucket público ("Missing signature") —
+    # sólo la REST API propia de Storage, en el subdominio sin "storage."
+    # (`<ref>.supabase.co/storage/v1/object/public/<bucket>`), sirve lectura
+    # anónima. Sin este override, `foto.url` apunta al endpoint S3 y da 403.
+    _supabase_public_host = urlparse(AWS_S3_ENDPOINT_URL).netloc.replace(
+        '.storage.supabase.co', '.supabase.co'
+    )
+    AWS_S3_CUSTOM_DOMAIN = (
+        f'{_supabase_public_host}/storage/v1/object/public/{AWS_STORAGE_BUCKET_NAME}'
+    )
 else:
     DEFAULT_FILE_STORAGE_BACKEND = 'django.core.files.storage.FileSystemStorage'
 
