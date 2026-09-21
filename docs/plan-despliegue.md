@@ -40,26 +40,33 @@ Postgres local, y `MEDIA_ROOT` en disco local. Nada de eso sirve tal cual en Ren
 que esto se resuelve **antes** de la Fase 2, con variables de entorno que sólo existen en
 producción (en local, si no están seteadas, todo debe seguir funcionando como hoy).
 
-- [ ] **`SECRET_KEY`, `DEBUG`, `ALLOWED_HOSTS` desde variables de entorno**, con los
+- [x] **`SECRET_KEY`, `DEBUG`, `ALLOWED_HOSTS` desde variables de entorno**, con los
       valores actuales como default de desarrollo. `ALLOWED_HOSTS` en producción debe
       incluir el dominio de Render (`.onrender.com` — Django soporta wildcards con punto
       inicial).
-- [ ] **`DATABASES` desde `DATABASE_URL`** cuando esa variable exista (usar
+- [x] **`DATABASES` desde `DATABASE_URL`** cuando esa variable exista (usar
       `dj-database-url`), y mantener el diccionario hardcodeado actual como fallback si
       no existe — así el flujo de desarrollo local con Postgres no cambia.
-- [ ] **Media en Supabase Storage en vez de disco local.** Render no ofrece disco
+- [x] **Media en Supabase Storage en vez de disco local.** Render no ofrece disco
       persistente en los planes gratuitos/estándar (el filesystem se reinicia en cada
       deploy y cada vez que el servicio se "duerme" y despierta), así que las fotos de
       `SolicitudRetiro` se perderían. Usar `django-storages` con el backend S3
       (`storages.backends.s3.S3Storage`) apuntando al endpoint S3-compatible de Supabase
       Storage, condicionado a que las variables `SUPABASE_S3_*` existan; si no existen,
       cae al `MEDIA_ROOT` local de siempre.
-- [ ] **Servir estáticos con WhiteNoise.** Con `DEBUG=False`, Django deja de servir
+- [x] **Servir estáticos con WhiteNoise.** Con `DEBUG=False`, Django deja de servir
       `/static/` (CSS del admin). Agregar `whitenoise.middleware.WhiteNoiseMiddleware`
       justo después de `SecurityMiddleware`, y `STATIC_ROOT`.
-- [ ] **`CORS_ALLOW_ALL_ORIGINS = DEBUG` ya está bien así** — la app Flutter en
+- [x] **`CORS_ALLOW_ALL_ORIGINS = DEBUG` ya está bien así** — la app Flutter en
       producción no es un origen de navegador (mobile), así que no necesita CORS. Dejarlo
       como está; sólo revisar si en algún momento se sirve una versión web de Flutter.
+
+> **Hecho.** Verificado con `manage.py check`, la suite completa
+> (`python manage.py test solicitudes roles gamificacion --settings=config.settings_test`,
+> 53 tests en verde) y un `collectstatic` de prueba con `DEBUG=False` — todo simulando
+> las variables de entorno de producción sin tocar el Postgres local. `backend/.env.example`
+> quedó documentado con las variables nuevas (comentadas, ver Fase 1/2 para sus valores
+> reales).
 
 Dependencias nuevas en `backend/requirements.txt`:
 
