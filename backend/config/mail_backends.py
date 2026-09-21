@@ -58,6 +58,11 @@ class ResendAPIEmailBackend(BaseEmailBackend):
             headers={
                 'Authorization': f'Bearer {settings.RESEND_API_KEY}',
                 'Content-Type': 'application/json',
+                # Cloudflare (delante de la API de Resend) bloquea el
+                # User-Agent por defecto de urllib ("Python-urllib/3.x") con
+                # un 403 "error code: 1010" — lo trata como bot. Un UA
+                # normal lo esquiva sin necesidad del SDK de Resend.
+                'User-Agent': 'reciclalo-app/1.0 (+https://reciclalo-app.onrender.com)',
             },
             method='POST',
         )
