@@ -4,6 +4,7 @@ import '../../routing.dart';
 import 'registro_screen.dart';
 import '../../services/api_client.dart';
 import '../../services/auth_service.dart';
+import '../recuperacion/solicitar_codigo_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -88,6 +89,19 @@ class _LoginScreenState extends State<LoginScreen> {
                   decoration: const InputDecoration(
                     labelText: 'Contraseña',
                     prefixIcon: Icon(Icons.lock_outline),
+                  ),
+                ),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const SolicitarCodigoScreen(),
+                        ),
+                      );
+                    },
+                    child: const Text('¿Olvidaste tu contraseña?'),
                   ),
                 ),
                 if (_error != null) ...[

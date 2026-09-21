@@ -10,10 +10,18 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.1/ref/settings/
 """
 
+import os
 from pathlib import Path
+
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Carga backend/.env si existe (no versionado — ver .env.example). En el
+# servidor de producción las variables se setean por otro medio y esto es un
+# no-op silencioso.
+load_dotenv(BASE_DIR / '.env')
 
 
 # Quick-start development settings - unsuitable for production
@@ -155,6 +163,18 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
     ],
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.ScopedRateThrottle',
+    ],
+    # Límites del Flujo 5 (recuperación de contraseña) — evitan que alguien
+    # agote la bandeja de correo de un tercero o fuerce el código por fuerza
+    # bruta. Sin scope, ScopedRateThrottle no limita nada (solo actúa sobre
+    # vistas que declaran `throttle_scope`), así que el resto de la API sigue
+    # sin límites propios por ahora.
+    'DEFAULT_THROTTLE_RATES': {
+        'recuperacion-solicitar': '5/hour',
+        'recuperacion-verificar': '20/hour',
+    },
 }
 
 # CORS (desarrollo): permitir la app Flutter (emulador/web) sin restricciones de origen.
@@ -163,9 +183,33 @@ CORS_ALLOW_ALL_ORIGINS = DEBUG
 
 # Email
 # https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration
+#
+# Envío vía Resend usando su SMTP relay (smtp.resend.com), así no hace falta
+# el SDK de Resend ni django-anymail: el backend SMTP estándar de Django ya
+# sirve. La API key vive en backend/.env (no versionado, ver .env.example) y
+# se toma como password SMTP — el usuario es literalmente "resend".
+#
+# Sin RESEND_API_KEY seteada (p. ej. clonando el repo por primera vez) cae al
+# backend de consola, así el Flujo 5 (recuperación de contraseña) se puede
+# probar imprimiendo el correo en la terminal de `runserver` sin credenciales.
+RESEND_API_KEY = os.environ.get('RESEND_API_KEY', '')
 
-MAILERS = {
-    'default': {
-        'BACKEND': 'django.core.mail.backends.console.EmailBackend',
-    },
-}
+if RESEND_API_KEY:
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+    EMAIL_HOST = 'smtp.resend.com'
+    EMAIL_PORT = 587
+    EMAIL_USE_TLS = True
+    EMAIL_HOST_USER = 'resend'
+    EMAIL_HOST_PASSWORD = RESEND_API_KEY
+else:
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+DEFAULT_FROM_EMAIL = os.environ.get(
+    'DEFAULT_FROM_EMAIL', 'EcoRecicla <no-reply@ecorecicla.local>'
+)
+
+# Ventana de expiración/reenvío/intentos del código OTP de recuperación
+# (Flujo 5 — ver docs/flujo-5-inicio-registro-recuperacion/).
+RECUPERACION_OTP_EXPIRA_MINUTOS = 10
+RECUPERACION_OTP_REENVIO_COOLDOWN_SEGUNDOS = 30
+RECUPERACION_OTP_MAX_INTENTOS = 5

@@ -11,9 +11,9 @@ import 'package:http/http.dart' as http;
 ///   LAN del PC (ver `ip addr` / `hostname -I` en Linux, `ipconfig` en Windows),
 ///   y arrancar el backend con `python manage.py runserver 0.0.0.0:8000`.
 /// Alex
-///const String backendBaseUrl = 'http://192.168.1.186:8000';
+const String backendBaseUrl = 'http://192.168.1.186:8000';
 ///juan
-const String backendBaseUrl = 'http://127.0.0.1:8000';
+// const String backendBaseUrl = 'http://127.0.0.1:8000';
 ///const String backendBaseUrl = 'http://10.0.2.2:8000';
 
 class ApiException implements Exception {

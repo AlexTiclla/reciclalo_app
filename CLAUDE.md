@@ -11,13 +11,13 @@ Reciclalo App (branded "EcoRecicla" in the UI) — a SaaS platform for geolocate
 
 Both roles also share a fidelización/gamification flow: EcoPuntos earned from completed pickups and racha milestones, redeemable for rewards. Out of scope for now: AI-based material classification, payments/wallet beyond EcoPuntos, in-app chat (WhatsApp deep links are used instead), push notifications, ratings, and integration with municipal waste systems.
 
-Product/design context lives in `brief/` (problem framing), `persona/` (personas, app map, user flow), `research/`, and `docs/` (design prompts and implementation plans: `docs/picker-flow-implementation-plan.md` for the collector flow, `docs/flujo-3-fidelizacion-gamificacion/` for the EcoPuntos/racha/rewards flow — spec, design prompt, and implementation plan). Read these before making product/UX decisions.
+Product/design context lives in `brief/` (problem framing), `persona/` (personas, app map, user flow), `research/`, and `docs/` (design prompts and implementation plans, one `flujo-N-*/` folder per flow: `flujo-1-ciudadano/`, `flujo-2-recolector/` for the collector map/pickup flow, `flujo-3-fidelizacion-gamificacion/` for EcoPuntos/racha/rewards, `flujo-4-coordinacion-seguimiento/`, `flujo-5-inicio-registro-recuperacion/` for login/registration/password recovery). `docs/Documento-Reciclalo.md` is the overall project write-up. Read the relevant flow's docs before making product/UX decisions.
 
 ## Repository structure
 
 - `backend/` — Django REST backend (project `config`), PostgreSQL, token auth.
   - `solicitudes/` — pickup requests, collector profiles, assignments. The core domain app.
-  - `roles/` — registration, role (Django `Group`) checks, and `/api/auth/me/`.
+  - `roles/` — registration, role (Django `Group`) checks, `/api/auth/me/`, and the OTP-based password recovery flow.
   - `gamificacion/` — EcoPuntos, rewards catalog/redemption, and the weekly racha (streak) engine.
 - `frontend/` — Flutter app. `lib/` is organized as `models/`, `services/`, `screens/`, `widgets/`, `theme/`.
 
@@ -40,6 +40,7 @@ python manage.py cerrar_semana_racha         # closes last week's racha for ever
 ```
 
 - Settings: `backend/config/settings.py`. `DATABASES` is hardcoded to a local PostgreSQL instance (`recicladora` db, `postgres` user, `localhost:5432`) — that database must exist for the backend to run. `DEBUG = True`, the `SECRET_KEY`, and `CORS_ALLOW_ALL_ORIGINS` are dev-only.
+- Email (password recovery OTP) goes through Resend's SMTP relay. `settings.py` loads `backend/.env` (see `backend/.env.example`) via `python-dotenv`; with `RESEND_API_KEY` set it uses `smtp.EmailBackend` against `smtp.resend.com`, otherwise it falls back to `console.EmailBackend` so the flow still works (printed to the `runserver` terminal) with no credentials configured.
 - `config/settings_test.py` overrides the database with in-memory SQLite so the suite runs without PostgreSQL: `python manage.py test solicitudes roles gamificacion --settings=config.settings_test`. Prefer this when you only need to verify logic.
 - `seed_picker_demo` creates `ciudadano_demo` / `recolector_demo` (password `demo12345`) plus pending requests around `--lat`/`--lng`, so the collector map has pins to work with.
 - `venv/`, `__pycache__/`, and `media/` are local/untracked — don't commit them.
@@ -66,6 +67,16 @@ Roles are plain Django `Group`s named `Ciudadano` and `Recolector`, assigned at 
 
 `SolicitudRetiroViewSet` serves both roles from one endpoint: `get_queryset`, `get_permissions`, and `get_serializer_class` all branch on the action and the caller's role. When adding an action for collectors, add it to `ACCIONES_RECOLECTOR` in `solicitudes/views.py` — otherwise it inherits the citizen's "only my own requests" queryset and will 404.
 
+### Password recovery (`roles/services.py`, Flujo 5)
+
+Three-step OTP flow, all `AllowAny` and rate-limited via `ScopedRateThrottle` (`recuperacion-solicitar`/`recuperacion-verificar` scopes in `REST_FRAMEWORK['DEFAULT_THROTTLE_RATES']`):
+
+1. `solicitar_codigo` looks up the user by username-or-email (`_buscar_usuario`), emails a 6-digit code (hashed at rest in `CodigoRecuperacion.codigo_hash` via `make_password`, never stored in plaintext), and **always returns 200 regardless of whether the account exists** — don't add a branch that reveals user existence.
+2. `verificar_codigo` checks the most recent unused code for that user and, on success, returns a short-lived `django.core.signing` token (not the code itself) that authorizes step 3.
+3. `restablecer_password` validates that signed token, checks the underlying `CodigoRecuperacion` hasn't already had its token consumed (`token_consumido`), then sets the new password.
+
+`CodigoRecuperacion` also tracks `intentos_fallidos` (locks after `RECUPERACION_OTP_MAX_INTENTOS`) and `expira_en` (`RECUPERACION_OTP_EXPIRA_MINUTOS`); both the OTP and the reset token share that expiry window. All three endpoints return the same generic error either way, so wrong code / expired / locked-out look identical from the outside.
+
 ### API
 
 Auth is DRF `TokenAuthentication` (`Authorization: Token <key>`).
@@ -74,6 +85,9 @@ Auth is DRF `TokenAuthentication` (`Authorization: Token <key>`).
 POST /api/auth/login/                          token only
 GET  /api/auth/me/                             user + rol; the app needs this to route by role
 POST /api/roles/registro/                      register with rol=Ciudadano|Recolector
+POST /api/roles/recuperacion/solicitar/        { identificador } -> always 200, emails OTP if the account exists
+POST /api/roles/recuperacion/verificar/        { identificador, codigo } -> { token }
+POST /api/roles/recuperacion/restablecer/      { token, nueva_password }
 
 GET  /api/solicitudes/?estado=activas|completada    citizen: own requests
 POST /api/solicitudes/                              citizen: publish (multipart, photo)
@@ -119,6 +133,7 @@ flutter test test/models/solicitud_test.dart
 - `lib/theme/app_theme.dart` holds the design system exported from Stitch: `EcoColors`, `EcoSpacing`, `EcoRadius`, `EcoShadows`, and the text scale. **Use these tokens instead of literal colors or spacing numbers** — the Stitch designs are the source of truth for the visual language.
 - Maps use `flutter_map` with OpenStreetMap tiles (`openStreetMapTiles()` in `widgets/picker/eco_map.dart`) — deliberately **not** `google_maps_flutter`, so no API key is needed. Google Maps is still used for turn-by-turn navigation, launched externally via `url_launcher` in `services/maps_service.dart`.
 - Navigation is plain `Navigator`/`MaterialPageRoute` plus the named routes in `main.dart`; there is no router package. `lib/routing.dart` maps a role to its root screen: citizens land on `HomeScreen`, collectors on `PickerShell` (the 4-tab bottom nav).
+- Password recovery (`screens/recuperacion/`, `services/recuperacion_service.dart`, `widgets/otp_input.dart`) is pre-auth, so it isn't reached through `routing.dart`/`main.dart` — it's pushed directly from `screens/auth/login_screen.dart`. `RecuperacionService` mirrors the backend's generic-error behavior with `CodigoInvalidoException`/`TokenExpiradoException`, both surfaced with the same on-screen message.
 - Neither root shell has a "Perfil" tab: the 4th tab is `RecompensasScreen` (shared by both roles) instead. Profile (account info, sign out, and the entry point to `MiImpactoScreen`) is reached via an account icon — `EcoAppBar` on most screens, a floating button on `PickerMapScreen` since that one is full-bleed with no `AppBar`. Follow this pattern (`EcoAppBar` + `onAbrirPerfil` callback) for any new top-level tab rather than reintroducing a Perfil tab.
 - `HomeScreen` and `PickerShell` each poll `GamificacionService.eventosPendientes()` on first frame and show `EcoPuntosModal`/`HitoRachaModal` sequentially for anything unseen (see the `gamificacion/` backend section above for why this queue exists instead of a direct response).
 - Lints come from `package:flutter_lints/flutter.yaml` via `analysis_options.yaml`. Platform build directories and `build/` are excluded from analysis.
@@ -130,6 +145,7 @@ flutter test test/models/solicitud_test.dart
 Custom skills for this repo live under `.claude/skills/` (the directory Claude Code scans for invocable skills).
 
 - `flutter-ui-ux` — Flutter UI/UX development workflow (widget composition, responsive layouts, animations, theming, accessibility). Invoke for Flutter screen/component/animation work.
+- `figma-sync` — keeps Figma designs and `frontend/lib/` in sync in both directions (design-to-code and code-to-design) using the Figma MCP tools directly, applying this repo's tokens/folder/Spanish-string conventions. Invoke before implementing a Figma frame into Flutter or pushing a Flutter screen back into Figma.
 
 ## Conventions
 
