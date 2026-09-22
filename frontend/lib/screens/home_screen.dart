@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../models/evento_pendiente.dart';
 import '../models/solicitud.dart';
+import '../routing_coordinacion.dart';
 import '../services/api_client.dart';
 import '../services/auth_service.dart';
 import '../services/gamificacion_service.dart';
@@ -14,7 +15,6 @@ import 'auth/login_screen.dart';
 import 'historial_screen.dart';
 import 'perfil_ciudadano_screen.dart';
 import 'recompensas_screen.dart';
-import 'solicitud_detalle_screen.dart';
 import 'solicitud_form_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -205,11 +205,7 @@ class _HomeTabState extends State<_HomeTab> {
                       (solicitud) => SolicitudCard(
                         solicitud: solicitud,
                         onTap: () async {
-                          await Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => SolicitudDetalleScreen(solicitudId: solicitud.id),
-                            ),
-                          );
+                          await abrirCoordinacion(context, solicitud);
                           _recargar();
                         },
                       ),

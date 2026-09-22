@@ -10,6 +10,8 @@ class PerfilRecolector {
     required this.totalCompletadas,
     this.latitudActual,
     this.longitudActual,
+    this.telefono = '',
+    this.fotoUrl,
   });
 
   final int id;
@@ -19,6 +21,10 @@ class PerfilRecolector {
   final double? latitudActual;
   final double? longitudActual;
 
+  /// Teléfono de contacto que el Ciudadano ve en las Screens 2/3 del Flujo 4.
+  final String telefono;
+  final String? fotoUrl;
+
   factory PerfilRecolector.fromJson(Map<String, dynamic> json) {
     return PerfilRecolector(
       id: json['id'] as int,
@@ -27,6 +33,8 @@ class PerfilRecolector {
       totalCompletadas: json['total_completadas'] as int? ?? 0,
       latitudActual: _aDouble(json['latitud_actual']),
       longitudActual: _aDouble(json['longitud_actual']),
+      telefono: json['telefono'] as String? ?? '',
+      fotoUrl: json['foto'] as String?,
     );
   }
 }

@@ -2,10 +2,17 @@ from decimal import Decimal
 
 from django.contrib.auth.models import Group, User
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from .models import AsignacionRetiro, EstadoSolicitud, Recolector, SolicitudRetiro
+from .models import (
+    AsignacionRetiro,
+    EstadoCoordinacion,
+    EstadoSolicitud,
+    Recolector,
+    SolicitudRetiro,
+)
 
 # Plaza 24 de Septiembre, Cochabamba — punto de referencia de las pruebas.
 CENTRO = (Decimal('-17.393700'), Decimal('-66.157000'))
@@ -54,6 +61,25 @@ class PickerAPITestCase(APITestCase):
 
     def autenticar_ciudadano(self):
         self.client.force_authenticate(self.ciudadano)
+
+    def avanzar_a_en_camino(self, solicitud):
+        """
+        `completar()` exige `estado == EN_CAMINO` — recorre coordinación de
+        franja + `en-camino` para dejar la solicitud en condiciones de
+        completarse. Asume que ya está `aceptada` por `self.usuario_recolector`.
+        Deja autenticado al recolector al salir.
+        """
+        inicio, fin = _franja()
+        self.autenticar_recolector()
+        self.client.post(
+            f'/api/solicitudes/{solicitud.id}/proponer-franja/',
+            {'ventana_inicio': inicio, 'ventana_fin': fin},
+            format='json',
+        )
+        self.autenticar_ciudadano()
+        self.client.post(f'/api/solicitudes/{solicitud.id}/aceptar-franja/', {}, format='json')
+        self.autenticar_recolector()
+        self.client.post(f'/api/solicitudes/{solicitud.id}/en-camino/', {}, format='json')
 
 
 class TestRecolectorPerfil(PickerAPITestCase):
@@ -231,6 +257,7 @@ class TestCompletarSolicitud(PickerAPITestCase):
     def test_completar_actualiza_estado_y_contador(self):
         self.autenticar_recolector()
         self.client.post(f'/api/solicitudes/{self.solicitud.id}/aceptar/', {}, format='json')
+        self.avanzar_a_en_camino(self.solicitud)
 
         respuesta = self.client.post(
             f'/api/solicitudes/{self.solicitud.id}/completar/', {'peso_kg': '3.5'}, format='json'
@@ -263,6 +290,7 @@ class TestCompletarSolicitud(PickerAPITestCase):
     def test_completar_dos_veces_es_conflicto(self):
         self.autenticar_recolector()
         self.client.post(f'/api/solicitudes/{self.solicitud.id}/aceptar/', {}, format='json')
+        self.avanzar_a_en_camino(self.solicitud)
         self.client.post(
             f'/api/solicitudes/{self.solicitud.id}/completar/', {'peso_kg': '3.5'}, format='json'
         )
@@ -276,12 +304,25 @@ class TestCompletarSolicitud(PickerAPITestCase):
     def test_completar_sin_peso_es_error(self):
         self.autenticar_recolector()
         self.client.post(f'/api/solicitudes/{self.solicitud.id}/aceptar/', {}, format='json')
+        self.avanzar_a_en_camino(self.solicitud)
 
         respuesta = self.client.post(
             f'/api/solicitudes/{self.solicitud.id}/completar/', {}, format='json'
         )
 
         self.assertEqual(respuesta.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_no_se_puede_completar_antes_de_estar_en_camino(self):
+        self.autenticar_recolector()
+        self.client.post(f'/api/solicitudes/{self.solicitud.id}/aceptar/', {}, format='json')
+
+        respuesta = self.client.post(
+            f'/api/solicitudes/{self.solicitud.id}/completar/', {'peso_kg': '3.5'}, format='json'
+        )
+
+        self.assertEqual(respuesta.status_code, status.HTTP_409_CONFLICT)
+        self.solicitud.refresh_from_db()
+        self.assertEqual(self.solicitud.estado, EstadoSolicitud.ACEPTADA)
 
 
 class TestListadosDelRecolector(PickerAPITestCase):
@@ -291,6 +332,7 @@ class TestListadosDelRecolector(PickerAPITestCase):
 
         self.client.post(f'/api/solicitudes/{self.solicitud.id}/aceptar/', {}, format='json')
         self.client.post(f'/api/solicitudes/{otra.id}/aceptar/', {}, format='json')
+        self.avanzar_a_en_camino(otra)
         self.client.post(
             f'/api/solicitudes/{otra.id}/completar/', {'peso_kg': '2.0'}, format='json'
         )
@@ -347,3 +389,314 @@ class TestPerfilActual(PickerAPITestCase):
         respuesta = self.client.get('/api/auth/me/')
 
         self.assertEqual(respuesta.status_code, status.HTTP_401_UNAUTHORIZED)
+
+
+def _franja(horas_desde_ahora=24, duracion_horas=3):
+    inicio = timezone.now() + timezone.timedelta(hours=horas_desde_ahora)
+    fin = inicio + timezone.timedelta(hours=duracion_horas)
+    return inicio.isoformat(), fin.isoformat()
+
+
+class TestCoordinacionFranja(PickerAPITestCase):
+    """Flujo 4 — propuesta/contrapropuesta/confirmación de franja horaria."""
+
+    def setUp(self):
+        super().setUp()
+        self.autenticar_recolector()
+        self.client.post(f'/api/solicitudes/{self.solicitud.id}/aceptar/', {}, format='json')
+
+    def test_ciudadano_propone_franja(self):
+        inicio, fin = _franja()
+        self.autenticar_ciudadano()
+
+        respuesta = self.client.post(
+            f'/api/solicitudes/{self.solicitud.id}/proponer-franja/',
+            {'ventana_inicio': inicio, 'ventana_fin': fin, 'notas_entrega': 'Tocar timbre'},
+            format='json',
+        )
+
+        self.assertEqual(respuesta.status_code, status.HTTP_200_OK)
+        self.assertEqual(respuesta.data['estado_coordinacion'], 'propuesta_ciudadano')
+        self.assertEqual(respuesta.data['notas_entrega'], 'Tocar timbre')
+
+        self.solicitud.refresh_from_db()
+        self.assertEqual(self.solicitud.estado_coordinacion, EstadoCoordinacion.PROPUESTA_CIUDADANO)
+
+    def test_recolector_propone_franja(self):
+        inicio, fin = _franja()
+        self.autenticar_recolector()
+
+        respuesta = self.client.post(
+            f'/api/solicitudes/{self.solicitud.id}/proponer-franja/',
+            {'ventana_inicio': inicio, 'ventana_fin': fin},
+            format='json',
+        )
+
+        self.assertEqual(respuesta.status_code, status.HTTP_200_OK)
+        self.solicitud.refresh_from_db()
+        self.assertEqual(self.solicitud.estado_coordinacion, EstadoCoordinacion.PROPUESTA_RECOLECTOR)
+        # Solo el ciudadano puede fijar las indicaciones de entrega.
+        self.assertEqual(self.solicitud.notas_entrega, '')
+
+    def test_tercero_no_puede_proponer_franja(self):
+        # Un usuario sin rol de Recolector ni dueño de la solicitud ni
+        # siquiera la encuentra — mismo criterio que `PuedeVerSolicitud` en
+        # el resto de la API (no revela que el recurso existe).
+        inicio, fin = _franja()
+        otro = User.objects.create_user('otra', password='clave12345')
+        self.client.force_authenticate(otro)
+
+        respuesta = self.client.post(
+            f'/api/solicitudes/{self.solicitud.id}/proponer-franja/',
+            {'ventana_inicio': inicio, 'ventana_fin': fin},
+            format='json',
+        )
+
+        self.assertEqual(respuesta.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_rechaza_ventana_invertida(self):
+        inicio, fin = _franja()
+        self.autenticar_ciudadano()
+
+        respuesta = self.client.post(
+            f'/api/solicitudes/{self.solicitud.id}/proponer-franja/',
+            {'ventana_inicio': fin, 'ventana_fin': inicio},
+            format='json',
+        )
+
+        self.assertEqual(respuesta.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_aceptar_franja_propia_es_conflicto(self):
+        inicio, fin = _franja()
+        self.autenticar_ciudadano()
+        self.client.post(
+            f'/api/solicitudes/{self.solicitud.id}/proponer-franja/',
+            {'ventana_inicio': inicio, 'ventana_fin': fin},
+            format='json',
+        )
+
+        respuesta = self.client.post(
+            f'/api/solicitudes/{self.solicitud.id}/aceptar-franja/', {}, format='json'
+        )
+
+        self.assertEqual(respuesta.status_code, status.HTTP_409_CONFLICT)
+
+    def test_recolector_acepta_la_propuesta_del_ciudadano(self):
+        inicio, fin = _franja()
+        self.autenticar_ciudadano()
+        self.client.post(
+            f'/api/solicitudes/{self.solicitud.id}/proponer-franja/',
+            {'ventana_inicio': inicio, 'ventana_fin': fin},
+            format='json',
+        )
+
+        self.autenticar_recolector()
+        respuesta = self.client.post(
+            f'/api/solicitudes/{self.solicitud.id}/aceptar-franja/', {}, format='json'
+        )
+
+        self.assertEqual(respuesta.status_code, status.HTTP_200_OK)
+        self.assertEqual(respuesta.data['estado_coordinacion'], 'confirmada')
+        self.solicitud.refresh_from_db()
+        self.assertIsNotNone(self.solicitud.franja_confirmada_en)
+
+
+class TestEnCamino(PickerAPITestCase):
+    def setUp(self):
+        super().setUp()
+        self.autenticar_recolector()
+        self.client.post(f'/api/solicitudes/{self.solicitud.id}/aceptar/', {}, format='json')
+
+    def _confirmar_franja(self):
+        inicio, fin = _franja()
+        self.client.post(
+            f'/api/solicitudes/{self.solicitud.id}/proponer-franja/',
+            {'ventana_inicio': inicio, 'ventana_fin': fin},
+            format='json',
+        )
+        self.autenticar_ciudadano()
+        self.client.post(f'/api/solicitudes/{self.solicitud.id}/aceptar-franja/', {}, format='json')
+        self.autenticar_recolector()
+
+    def test_sin_franja_confirmada_es_conflicto(self):
+        respuesta = self.client.post(
+            f'/api/solicitudes/{self.solicitud.id}/en-camino/', {}, format='json'
+        )
+
+        self.assertEqual(respuesta.status_code, status.HTTP_409_CONFLICT)
+
+    def test_con_franja_confirmada_pasa_a_en_camino(self):
+        self._confirmar_franja()
+
+        respuesta = self.client.post(
+            f'/api/solicitudes/{self.solicitud.id}/en-camino/', {}, format='json'
+        )
+
+        self.assertEqual(respuesta.status_code, status.HTTP_200_OK)
+        self.assertEqual(respuesta.data['estado'], 'en_camino')
+
+        self.solicitud.refresh_from_db()
+        self.assertEqual(self.solicitud.estado, EstadoSolicitud.EN_CAMINO)
+        asignacion = AsignacionRetiro.objects.get(solicitud=self.solicitud)
+        self.assertIsNotNone(asignacion.en_camino_en)
+
+
+class TestCalificar(PickerAPITestCase):
+    def setUp(self):
+        super().setUp()
+        self.autenticar_recolector()
+        self.client.post(f'/api/solicitudes/{self.solicitud.id}/aceptar/', {}, format='json')
+        self.avanzar_a_en_camino(self.solicitud)
+        self.client.post(
+            f'/api/solicitudes/{self.solicitud.id}/completar/', {'peso_kg': '3.5'}, format='json'
+        )
+
+    def test_no_se_puede_calificar_antes_de_completar(self):
+        otra = self.crear_solicitud()
+        self.autenticar_recolector()
+        self.client.post(f'/api/solicitudes/{otra.id}/aceptar/', {}, format='json')
+
+        self.autenticar_ciudadano()
+        respuesta = self.client.post(
+            f'/api/solicitudes/{otra.id}/calificar/', {'calificacion': 5}, format='json'
+        )
+
+        self.assertEqual(respuesta.status_code, status.HTTP_409_CONFLICT)
+
+    def test_calificacion_fuera_de_rango_es_400(self):
+        self.autenticar_ciudadano()
+
+        respuesta = self.client.post(
+            f'/api/solicitudes/{self.solicitud.id}/calificar/', {'calificacion': 6}, format='json'
+        )
+
+        self.assertEqual(respuesta.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_califica_correctamente_y_no_bloquea_los_ecopuntos(self):
+        self.autenticar_ciudadano()
+
+        respuesta = self.client.post(
+            f'/api/solicitudes/{self.solicitud.id}/calificar/',
+            {
+                'calificacion': 5,
+                'etiquetas': ['Puntual', 'Amable y respetuoso'],
+                'comentario': 'Excelente atención',
+            },
+            format='json',
+        )
+
+        self.assertEqual(respuesta.status_code, status.HTTP_200_OK)
+        self.assertEqual(respuesta.data['calificacion'], 5)
+        self.assertEqual(respuesta.data['calificacion_etiquetas'], ['Puntual', 'Amable y respetuoso'])
+
+        asignacion = AsignacionRetiro.objects.get(solicitud=self.solicitud)
+        self.assertEqual(asignacion.calificacion, 5)
+
+        # Los EcoPuntos ya se acreditaron al completar, no dependen de esto.
+        from gamificacion.models import TransaccionEcoPuntos
+        self.assertTrue(TransaccionEcoPuntos.objects.filter(solicitud=self.solicitud).exists())
+
+    def test_no_se_puede_calificar_dos_veces(self):
+        self.autenticar_ciudadano()
+        self.client.post(
+            f'/api/solicitudes/{self.solicitud.id}/calificar/', {'calificacion': 4}, format='json'
+        )
+
+        respuesta = self.client.post(
+            f'/api/solicitudes/{self.solicitud.id}/calificar/', {'calificacion': 2}, format='json'
+        )
+
+        self.assertEqual(respuesta.status_code, status.HTTP_409_CONFLICT)
+
+    def test_otro_usuario_no_puede_calificar(self):
+        otro = User.objects.create_user('otra', password='clave12345')
+        self.client.force_authenticate(otro)
+
+        respuesta = self.client.post(
+            f'/api/solicitudes/{self.solicitud.id}/calificar/', {'calificacion': 5}, format='json'
+        )
+
+        self.assertEqual(respuesta.status_code, status.HTTP_404_NOT_FOUND)
+
+
+class TestRecolectorResumenCalificacionPromedio(PickerAPITestCase):
+    def test_sin_calificaciones_es_none(self):
+        self.autenticar_recolector()
+        self.client.post(f'/api/solicitudes/{self.solicitud.id}/aceptar/', {}, format='json')
+
+        self.autenticar_ciudadano()
+        respuesta = self.client.get(f'/api/solicitudes/{self.solicitud.id}/')
+
+        self.assertIsNone(respuesta.data['recolector']['calificacion_promedio'])
+
+    def test_promedio_correcto_con_varias_calificaciones(self):
+        self.autenticar_recolector()
+        self.client.post(f'/api/solicitudes/{self.solicitud.id}/aceptar/', {}, format='json')
+        self.avanzar_a_en_camino(self.solicitud)
+        self.client.post(
+            f'/api/solicitudes/{self.solicitud.id}/completar/', {'peso_kg': '3.5'}, format='json'
+        )
+
+        otra = self.crear_solicitud()
+        self.client.post(f'/api/solicitudes/{otra.id}/aceptar/', {}, format='json')
+        self.avanzar_a_en_camino(otra)
+        self.client.post(f'/api/solicitudes/{otra.id}/completar/', {'peso_kg': '1.0'}, format='json')
+
+        self.autenticar_ciudadano()
+        self.client.post(
+            f'/api/solicitudes/{self.solicitud.id}/calificar/', {'calificacion': 5}, format='json'
+        )
+        self.client.post(f'/api/solicitudes/{otra.id}/calificar/', {'calificacion': 3}, format='json')
+
+        respuesta = self.client.get(f'/api/solicitudes/{self.solicitud.id}/')
+
+        self.assertEqual(respuesta.data['recolector']['calificacion_promedio'], 4.0)
+
+
+class TestPuntosAcreditados(PickerAPITestCase):
+    def test_ciudadano_ve_los_puntos_acreditados_por_su_retiro(self):
+        self.autenticar_recolector()
+        self.client.post(f'/api/solicitudes/{self.solicitud.id}/aceptar/', {}, format='json')
+        self.avanzar_a_en_camino(self.solicitud)
+        self.client.post(
+            f'/api/solicitudes/{self.solicitud.id}/completar/', {'peso_kg': '3.5'}, format='json'
+        )
+
+        self.autenticar_ciudadano()
+        respuesta = self.client.get(f'/api/solicitudes/{self.solicitud.id}/')
+
+        from gamificacion.models import TransaccionEcoPuntos
+        transaccion = TransaccionEcoPuntos.objects.get(solicitud=self.solicitud)
+        self.assertEqual(respuesta.data['puntos_acreditados'], transaccion.puntos)
+
+    def test_null_antes_de_completar(self):
+        self.autenticar_ciudadano()
+
+        respuesta = self.client.get(f'/api/solicitudes/{self.solicitud.id}/')
+
+        self.assertIsNone(respuesta.data['puntos_acreditados'])
+
+
+class TestTelefonoRecolector(PickerAPITestCase):
+    def test_recolector_registra_su_telefono(self):
+        self.autenticar_recolector()
+
+        respuesta = self.client.post(
+            '/api/recolector/telefono/', {'telefono': '+59170000001'}, format='json'
+        )
+
+        self.assertEqual(respuesta.status_code, status.HTTP_200_OK)
+        self.assertEqual(respuesta.data['telefono'], '+59170000001')
+
+        perfil = Recolector.objects.get(usuario=self.usuario_recolector)
+        self.assertEqual(perfil.telefono, '+59170000001')
+
+    def test_el_ciudadano_ve_el_telefono_del_recolector_asignado(self):
+        self.autenticar_recolector()
+        self.client.post('/api/recolector/telefono/', {'telefono': '+59170000001'}, format='json')
+        self.client.post(f'/api/solicitudes/{self.solicitud.id}/aceptar/', {}, format='json')
+
+        self.autenticar_ciudadano()
+        respuesta = self.client.get(f'/api/solicitudes/{self.solicitud.id}/')
+
+        self.assertEqual(respuesta.data['recolector']['telefono'], '+59170000001')

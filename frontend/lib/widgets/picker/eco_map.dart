@@ -28,6 +28,7 @@ class MapaUbicacion extends StatelessWidget {
     this.altura = 128,
     this.zoom = 16,
     this.overlay,
+    this.ubicacionSecundaria,
   });
 
   final double latitud;
@@ -38,9 +39,16 @@ class MapaUbicacion extends StatelessWidget {
   /// Tarjeta opcional superpuesta al mapa (dirección, distancia).
   final Widget? overlay;
 
+  /// Última posición conocida del recolector (Flujo 4, Screen 3). Cuando se
+  /// provee, se dibuja un segundo marcador y una línea recta entre ambos
+  /// puntos — deliberadamente no una ruta por calles, para no fingir un dato
+  /// de ruteo que la app no tiene.
+  final LatLng? ubicacionSecundaria;
+
   @override
   Widget build(BuildContext context) {
     final punto = LatLng(latitud, longitud);
+    final secundario = ubicacionSecundaria;
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(EcoRadius.xl),
@@ -57,12 +65,29 @@ class MapaUbicacion extends StatelessWidget {
                 options: MapOptions(
                   initialCenter: punto,
                   initialZoom: zoom,
+                  initialCameraFit: secundario != null
+                      ? CameraFit.bounds(
+                          bounds: LatLngBounds(punto, secundario),
+                          padding: const EdgeInsets.all(36),
+                        )
+                      : null,
                   interactionOptions: const InteractionOptions(
                     flags: InteractiveFlag.none,
                   ),
                 ),
                 children: [
                   openStreetMapTiles(),
+                  if (secundario != null)
+                    PolylineLayer(
+                      polylines: [
+                        Polyline(
+                          points: [secundario, punto],
+                          strokeWidth: 3,
+                          color: EcoColors.primary.withValues(alpha: 0.5),
+                          pattern: const StrokePattern.dotted(),
+                        ),
+                      ],
+                    ),
                   MarkerLayer(
                     markers: [
                       Marker(
@@ -72,6 +97,13 @@ class MapaUbicacion extends StatelessWidget {
                         alignment: Alignment.topCenter,
                         child: const _ChinchetaDestino(),
                       ),
+                      if (secundario != null)
+                        Marker(
+                          point: secundario,
+                          width: 36,
+                          height: 36,
+                          child: const _MarcadorRecolector(),
+                        ),
                     ],
                   ),
                 ],
@@ -87,6 +119,24 @@ class MapaUbicacion extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Marcador de la última posición conocida del recolector en Screen 3.
+class _MarcadorRecolector extends StatelessWidget {
+  const _MarcadorRecolector();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: EcoColors.primary,
+        border: Border.all(color: EcoColors.surfaceContainerLowest, width: 2),
+        boxShadow: const [BoxShadow(color: Color(0x33000000), blurRadius: 6)],
+      ),
+      child: const Icon(Icons.local_shipping, size: 18, color: EcoColors.onPrimary),
     );
   }
 }

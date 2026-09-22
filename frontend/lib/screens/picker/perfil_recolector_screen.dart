@@ -20,15 +20,42 @@ class PerfilRecolectorScreen extends StatefulWidget {
 
 class _PerfilRecolectorScreenState extends State<PerfilRecolectorScreen> {
   final _pickerService = PickerService(ApiClient.instance);
+  final _telefonoController = TextEditingController();
 
   PerfilRecolector? _perfil;
   String? _error;
   bool _guardando = false;
+  bool _guardandoTelefono = false;
 
   @override
   void initState() {
     super.initState();
     _cargar();
+  }
+
+  @override
+  void dispose() {
+    _telefonoController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _guardarTelefono() async {
+    setState(() => _guardandoTelefono = true);
+    try {
+      final perfil = await _pickerService.actualizarTelefono(_telefonoController.text.trim());
+      if (!mounted) return;
+      setState(() => _perfil = perfil);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Teléfono actualizado.')),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('No se pudo guardar el teléfono: $error')),
+      );
+    } finally {
+      if (mounted) setState(() => _guardandoTelefono = false);
+    }
   }
 
   Future<void> _cargar() async {
@@ -38,6 +65,7 @@ class _PerfilRecolectorScreenState extends State<PerfilRecolectorScreen> {
       setState(() {
         _perfil = perfil;
         _error = null;
+        _telefonoController.text = perfil.telefono;
       });
     } catch (error) {
       if (!mounted) return;
@@ -95,6 +123,51 @@ class _PerfilRecolectorScreenState extends State<PerfilRecolectorScreen> {
                                 ? 'Estás recibiendo solicitudes cercanas.'
                                 : 'No aparecerás como disponible.',
                             style: textos.bodySmall,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: EcoSpacing.section),
+                      Card(
+                        child: Padding(
+                          padding: const EdgeInsets.all(EcoSpacing.stack),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Teléfono de contacto', style: textos.labelLarge),
+                              const SizedBox(height: EcoSpacing.element),
+                              Text(
+                                'El ciudadano lo usa para contactarte por WhatsApp o llamada '
+                                'mientras coordinan el retiro.',
+                                style: textos.bodySmall,
+                              ),
+                              const SizedBox(height: EcoSpacing.stack),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: TextField(
+                                      controller: _telefonoController,
+                                      keyboardType: TextInputType.phone,
+                                      decoration: const InputDecoration(hintText: '+591 70000000'),
+                                    ),
+                                  ),
+                                  const SizedBox(width: EcoSpacing.stack),
+                                  FilledButton(
+                                    onPressed: _guardandoTelefono ? null : _guardarTelefono,
+                                    style: FilledButton.styleFrom(
+                                      minimumSize: const Size(0, EcoSpacing.touchTarget),
+                                    ),
+                                    child: _guardandoTelefono
+                                        ? const SizedBox(
+                                            width: 18, height: 18,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2, color: EcoColors.onPrimary,
+                                            ),
+                                          )
+                                        : const Text('Guardar'),
+                                  ),
+                                ],
+                              ),
+                            ],
                           ),
                         ),
                       ),

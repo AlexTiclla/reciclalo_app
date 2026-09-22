@@ -54,7 +54,12 @@ class Command(BaseCommand):
     def handle(self, *args, **opciones):
         ciudadano = self._usuario('ciudadano_demo', 'Ciudadano')
         recolector_usuario = self._usuario('recolector_demo', 'Recolector')
-        Recolector.para_usuario(recolector_usuario)
+        perfil_recolector = Recolector.para_usuario(recolector_usuario)
+        # Para que el flujo de contacto (Flujo 4, Screens 2/3) funcione sin
+        # pasos manuales: el ciudadano necesita un teléfono publicable.
+        if not perfil_recolector.telefono:
+            perfil_recolector.telefono = '+59170000001'
+            perfil_recolector.save(update_fields=['telefono'])
 
         centro_lat = Decimal(str(opciones['lat']))
         centro_lng = Decimal(str(opciones['lng']))

@@ -27,6 +27,11 @@ class AsignacionRetiro {
     required this.aceptadaEn,
     this.completadaEn,
     this.notas = '',
+    this.enCaminoEn,
+    this.llegoEn,
+    this.calificacion,
+    this.calificacionEtiquetas = const [],
+    this.calificacionComentario = '',
   });
 
   final int id;
@@ -35,6 +40,17 @@ class AsignacionRetiro {
   final DateTime aceptadaEn;
   final DateTime? completadaEn;
   final String notas;
+
+  // --- Seguimiento y calificación (Flujo 4) ---
+  final DateTime? enCaminoEn;
+  final DateTime? llegoEn;
+
+  /// `null` mientras el ciudadano no calificó este retiro todavía.
+  final int? calificacion;
+  final List<String> calificacionEtiquetas;
+  final String calificacionComentario;
+
+  bool get yaCalificado => calificacion != null;
 
   factory AsignacionRetiro.fromJson(Map<String, dynamic> json) {
     return AsignacionRetiro(
@@ -46,6 +62,13 @@ class AsignacionRetiro {
           ? DateTime.parse(json['completada_en'] as String)
           : null,
       notas: json['notas'] as String? ?? '',
+      enCaminoEn: json['en_camino_en'] != null
+          ? DateTime.parse(json['en_camino_en'] as String)
+          : null,
+      llegoEn: json['llego_en'] != null ? DateTime.parse(json['llego_en'] as String) : null,
+      calificacion: json['calificacion'] as int?,
+      calificacionEtiquetas: (json['calificacion_etiquetas'] as List?)?.cast<String>() ?? const [],
+      calificacionComentario: json['calificacion_comentario'] as String? ?? '',
     );
   }
 }
